@@ -1,0 +1,197 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TrendLine } from '@/components/charts/trend-line';
+import { format, parseISO, eachWeekOfInterval, endOfWeek, eachMonthOfInterval, endOfMonth } from 'date-fns';
+import type { DailyStrain } from '@/lib/types';
+
+type Period = 'daily' | 'weekly' | 'monthly';
+type Metric = 'strain' | 'exercises' | 'duration' | 'steps';
+
+const PERIODS: { value: Period; label: string }[] = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+];
+
+const METRICS: { value: Metric; label: string }[] = [
+  { value: 'strain', label: 'Strain' },
+  { value: 'exercises', label: 'Count' },
+  { value: 'duration', label: 'Duration' },
+  { value: 'steps', label: 'Steps' },
+];
+
+const METRIC_CONFIG: Record<Metric, { color: string; label: string; aggLabel: string }> = {
+  strain: { color: '#00d26a', label: 'Strain', aggLabel: 'Avg Strain' },
+  exercises: { color: '#8b5cf6', label: 'Workouts', aggLabel: 'Workouts' },
+  duration: { color: '#00bcd4', label: 'Duration (min)', aggLabel: 'Duration (min)' },
+  steps: { color: '#ff6b35', label: 'Steps', aggLabel: 'Steps' },
+};
+
+interface TrendSectionProps {
+  strainData: DailyStrain[];
+}
+
+export function TrendSection({ strainData }: TrendSectionProps) {
+  const [period, setPeriod] = useState<Period>('daily');
+  const [metric, setMetric] = useState<Metric>('strain');
+
+  // Daily series
+  const dailyData = useMemo(() => ({
+    strain: strainData.map((d) => ({ date: d.date, value: d.strain_score })),
+    duration: strainData.map((d) => ({ date: d.date, value: d.total_duration })),
+    exercises: strainData.map((d) => ({ date: d.date, value: d.workout_count })),
+    steps: strainData.map((d) => ({ date: d.date, value: d.steps || 0 })),
+  }), [strainData]);
+
+  // Weekly aggregation
+  const weeklyData = useMemo(() => {
+    if (strainData.length < 2) return { strain: [], duration: [], exercises: [], steps: [] };
+    const sorted = [...strainData].sort((a, b) => a.date.localeCompare(b.date));
+    const firstDate = parseISO(sorted[0].date);
+    const lastDate = parseISO(sorted[sorted.length - 1].date);
+    const weeks = eachWeekOfInterval({ start: firstDate, end: lastDate }, { weekStartsOn: 1 });
+    const dataMap = new Map(strainData.map((d) => [d.date, d]));
+
+    return {
+      strain: weeks.map((weekStart) => {
+        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+        let total = 0, count = 0;
+        for (let d = weekStart; d <= weekEnd; d = new Date(d.getTime() + 86400000)) {
+          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
+          if (entry) { total += entry.strain_score; count++; }
+        }
+        return { date: format(weekStart, 'yyyy-MM-dd'), value: count > 0 ? Math.round(total / count * 10) / 10 : 0 };
+      }),
+      duration: weeks.map((weekStart) => {
+        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+        let total = 0;
+        for (let d = weekStart; d <= weekEnd; d = new Date(d.getTime() + 86400000)) {
+          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
+          if (entry) total += entry.total_duration;
+        }
+        return { date: format(weekStart, 'yyyy-MM-dd'), value: total };
+      }),
+      exercises: weeks.map((weekStart) => {
+        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+        let total = 0;
+        for (let d = weekStart; d <= weekEnd; d = new Date(d.getTime() + 86400000)) {
+          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
+          if (entry) total += entry.workout_count;
+        }
+        return { date: format(weekStart, 'yyyy-MM-dd'), value: total };
+      }),
+      steps: weeks.map((weekStart) => {
+        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+        let total = 0;
+        for (let d = weekStart; d <= weekEnd; d = new Date(d.getTime() + 86400000)) {
+          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
+          if (entry) total += entry.steps || 0;
+        }
+        return { date: format(weekStart, 'yyyy-MM-dd'), value: total };
+      }),
+    };
+  }, [strainData]);
+
+  // Monthly aggregation
+  const monthlyData = useMemo(() => {
+    if (strainData.length < 2) return { strain: [], duration: [], exercises: [], steps: [] };
+    const sorted = [...strainData].sort((a, b) => a.date.localeCompare(b.date));
+    const firstDate = parseISO(sorted[0].date);
+    const lastDate = parseISO(sorted[sorted.length - 1].date);
+    const months = eachMonthOfInterval({ start: firstDate, end: lastDate });
+    const dataMap = new Map(strainData.map((d) => [d.date, d]));
+
+    return {
+      strain: months.map((monthStart) => {
+        const monthEnd = endOfMonth(monthStart);
+        let total = 0, count = 0;
+        for (let d = monthStart; d <= monthEnd; d = new Date(d.getTime() + 86400000)) {
+          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
+          if (entry) { total += entry.strain_score; count++; }
+        }
+        return { date: format(monthStart, 'yyyy-MM-dd'), value: count > 0 ? Math.round(total / count * 10) / 10 : 0 };
+      }),
+      duration: months.map((monthStart) => {
+        const monthEnd = endOfMonth(monthStart);
+        let total = 0;
+        for (let d = monthStart; d <= monthEnd; d = new Date(d.getTime() + 86400000)) {
+          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
+          if (entry) total += entry.total_duration;
+        }
+        return { date: format(monthStart, 'yyyy-MM-dd'), value: total };
+      }),
+      exercises: months.map((monthStart) => {
+        const monthEnd = endOfMonth(monthStart);
+        let total = 0;
+        for (let d = monthStart; d <= monthEnd; d = new Date(d.getTime() + 86400000)) {
+          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
+          if (entry) total += entry.workout_count;
+        }
+        return { date: format(monthStart, 'yyyy-MM-dd'), value: total };
+      }),
+      steps: months.map((monthStart) => {
+        const monthEnd = endOfMonth(monthStart);
+        let total = 0;
+        for (let d = monthStart; d <= monthEnd; d = new Date(d.getTime() + 86400000)) {
+          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
+          if (entry) total += entry.steps || 0;
+        }
+        return { date: format(monthStart, 'yyyy-MM-dd'), value: total };
+      }),
+    };
+  }, [strainData]);
+
+  const sourceData = period === 'daily' ? dailyData : period === 'weekly' ? weeklyData : monthlyData;
+  const chartData = sourceData[metric];
+  const config = METRIC_CONFIG[metric];
+  const chartLabel = period === 'daily' ? config.label : config.aggLabel;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <CardTitle>Trends</CardTitle>
+          <div className="flex items-center gap-2">
+            {/* Period selector */}
+            <div className="flex items-center rounded-lg bg-[#1a1a24] p-1 gap-0.5">
+              {PERIODS.map((p) => (
+                <button
+                  key={p.value}
+                  onClick={() => setPeriod(p.value)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    period === p.value
+                      ? 'bg-[#2a2a35] text-gray-100'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            {/* Metric selector */}
+            <div className="flex items-center rounded-lg bg-[#1a1a24] p-1 gap-0.5">
+              {METRICS.map((m) => (
+                <button
+                  key={m.value}
+                  onClick={() => setMetric(m.value)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    metric === m.value
+                      ? 'bg-[#2a2a35] text-gray-100'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <TrendLine data={chartData} color={config.color} label={chartLabel} />
+      </CardContent>
+    </Card>
+  );
+}

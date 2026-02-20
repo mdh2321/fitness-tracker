@@ -122,7 +122,14 @@ export async function POST(request: NextRequest) {
   // --- Auth ---
   const apiKey = request.headers.get('x-api-key');
   if (!process.env.SYNC_API_KEY || apiKey !== process.env.SYNC_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({
+      error: 'Unauthorized',
+      debug: {
+        received_key: apiKey ?? 'none',
+        env_key_set: !!process.env.SYNC_API_KEY,
+        env_key_length: process.env.SYNC_API_KEY?.length ?? 0,
+      },
+    }, { status: 401 });
   }
 
   let body: { workouts?: any[]; steps?: any[] };

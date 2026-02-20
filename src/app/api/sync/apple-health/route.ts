@@ -119,22 +119,15 @@ async function recalcDailyStrain(date: string) {
 }
 
 export async function POST(request: NextRequest) {
-  // --- Auth ---
-  const apiKey = request.headers.get('x-api-key');
-  if (!process.env.SYNC_API_KEY || apiKey !== process.env.SYNC_API_KEY) {
-    return NextResponse.json({
-      error: 'Unauthorized',
-      debug: {
-        received_key: apiKey ?? 'none',
-        env_key_set: !!process.env.SYNC_API_KEY,
-        env_key_length: process.env.SYNC_API_KEY?.length ?? 0,
-      },
-    }, { status: 401 });
-  }
+  // --- Auth temporarily disabled for debugging ---
 
   let body: { workouts?: any[]; steps?: any[] };
+  let rawBody: any;
   try {
-    body = await request.json();
+    rawBody = await request.json();
+    body = rawBody;
+    // Temporary: return raw body so we can inspect Health Auto Export's format
+    return NextResponse.json({ debug_received: rawBody });
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }

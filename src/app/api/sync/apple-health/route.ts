@@ -256,7 +256,7 @@ export async function POST(request: NextRequest) {
       const qty = extractQty(entry) ?? (entry.qty != null ? Number(entry.qty) : null);
       if (qty == null || !entry.date) continue;
       const dateKey = entry.date.substring(0, 10);
-      stepsByDate.set(dateKey, Math.round(qty));
+      stepsByDate.set(dateKey, (stepsByDate.get(dateKey) ?? 0) + Math.round(qty));
     }
 
     // Insert all step days in one batch

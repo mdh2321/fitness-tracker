@@ -1,13 +1,22 @@
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/libsql';
+import { createClient } from '@libsql/client';
 import * as schema from './schema';
 import path from 'path';
+import fs from 'fs';
 
-const dbPath = path.join(process.cwd(), 'data', 'fitness.db');
+const url =
+  process.env.TURSO_DATABASE_URL ??
+  `file:${path.join(process.cwd(), 'data', 'fitness.db')}`;
 
-const sqlite = new Database(dbPath);
-sqlite.pragma('journal_mode = WAL');
-sqlite.pragma('foreign_keys = ON');
+const authToken = process.env.TURSO_AUTH_TOKEN;
 
-export const db = drizzle(sqlite, { schema });
+// Ensure data directory exists for local file-based SQLite
+if (url.startsWith('file:')) {
+  const dbPath = url.slice(5);
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+}
+
+const client = createClient({ url, authToken });
+
+export const db = drizzle(client, { schema });
 export type DB = typeof db;

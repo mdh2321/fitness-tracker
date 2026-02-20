@@ -7,70 +7,78 @@ import { APPLE_HEALTH_TYPE_MAP } from '@/lib/constants';
 import { format } from 'date-fns';
 import type { WorkoutType } from '@/lib/constants';
 
-// Display names sent by Apple Shortcuts (not HK type strings)
+// Health Auto Export sends workout type as a human-readable "name" field
 const SHORTCUTS_TYPE_MAP: Record<string, { type: WorkoutType; name: string }> = {
-  'Running':                        { type: 'cardio',      name: 'Running' },
-  'Outdoor Run':                    { type: 'cardio',      name: 'Running' },
-  'Indoor Run':                     { type: 'cardio',      name: 'Running' },
-  'Cycling':                        { type: 'cardio',      name: 'Cycling' },
-  'Outdoor Cycling':                { type: 'cardio',      name: 'Cycling' },
-  'Indoor Cycling':                 { type: 'cardio',      name: 'Cycling' },
-  'Swimming':                       { type: 'cardio',      name: 'Swimming' },
-  'Open Water Swimming':            { type: 'cardio',      name: 'Swimming' },
-  'Pool Swimming':                  { type: 'cardio',      name: 'Swimming' },
-  'Walking':                        { type: 'cardio',      name: 'Walking' },
-  'Outdoor Walk':                   { type: 'cardio',      name: 'Walking' },
-  'Indoor Walk':                    { type: 'cardio',      name: 'Walking' },
-  'Hiking':                         { type: 'cardio',      name: 'Hiking' },
-  'Elliptical':                     { type: 'cardio',      name: 'Elliptical' },
-  'Rowing':                         { type: 'cardio',      name: 'Rowing' },
-  'Stair Climbing':                 { type: 'cardio',      name: 'Stair Climbing' },
-  'Jump Rope':                      { type: 'cardio',      name: 'Jump Rope' },
-  'Dance':                          { type: 'cardio',      name: 'Dance' },
-  'Step Training':                  { type: 'cardio',      name: 'Step Training' },
-  'Traditional Strength Training':  { type: 'strength',    name: 'Strength Training' },
-  'Functional Strength Training':   { type: 'strength',    name: 'Functional Strength' },
-  'Core Training':                  { type: 'strength',    name: 'Core Training' },
-  'Cross Training':                 { type: 'mixed',       name: 'Cross Training' },
-  'High Intensity Interval Training': { type: 'mixed',     name: 'HIIT' },
-  'HIIT':                           { type: 'mixed',       name: 'HIIT' },
-  'Mixed Cardio':                   { type: 'mixed',       name: 'Mixed Cardio' },
-  'Kickboxing':                     { type: 'mixed',       name: 'Kickboxing' },
-  'Yoga':                           { type: 'flexibility', name: 'Yoga' },
-  'Pilates':                        { type: 'flexibility', name: 'Pilates' },
-  'Barre':                          { type: 'flexibility', name: 'Barre' },
-  'Cooldown':                       { type: 'flexibility', name: 'Cooldown' },
-  'Mind & Body':                    { type: 'flexibility', name: 'Mind & Body' },
-  'Soccer':                         { type: 'sport',       name: 'Soccer' },
-  'Basketball':                     { type: 'sport',       name: 'Basketball' },
-  'Tennis':                         { type: 'sport',       name: 'Tennis' },
-  'Volleyball':                     { type: 'sport',       name: 'Volleyball' },
-  'Boxing':                         { type: 'sport',       name: 'Boxing' },
-  'Martial Arts':                   { type: 'sport',       name: 'Martial Arts' },
-  'Other':                          { type: 'mixed',       name: 'Workout' },
+  'Running':                          { type: 'cardio',      name: 'Running' },
+  'Outdoor Run':                      { type: 'cardio',      name: 'Running' },
+  'Indoor Run':                       { type: 'cardio',      name: 'Running' },
+  'Cycling':                          { type: 'cardio',      name: 'Cycling' },
+  'Outdoor Cycling':                  { type: 'cardio',      name: 'Cycling' },
+  'Indoor Cycling':                   { type: 'cardio',      name: 'Cycling' },
+  'Swimming':                         { type: 'cardio',      name: 'Swimming' },
+  'Open Water Swimming':              { type: 'cardio',      name: 'Swimming' },
+  'Pool Swimming':                    { type: 'cardio',      name: 'Swimming' },
+  'Walking':                          { type: 'cardio',      name: 'Walking' },
+  'Outdoor Walk':                     { type: 'cardio',      name: 'Walking' },
+  'Indoor Walk':                      { type: 'cardio',      name: 'Walking' },
+  'Hiking':                           { type: 'cardio',      name: 'Hiking' },
+  'Elliptical':                       { type: 'cardio',      name: 'Elliptical' },
+  'Rowing':                           { type: 'cardio',      name: 'Rowing' },
+  'Stair Climbing':                   { type: 'cardio',      name: 'Stair Climbing' },
+  'Jump Rope':                        { type: 'cardio',      name: 'Jump Rope' },
+  'Dance':                            { type: 'cardio',      name: 'Dance' },
+  'Step Training':                    { type: 'cardio',      name: 'Step Training' },
+  'Traditional Strength Training':    { type: 'strength',    name: 'Strength Training' },
+  'Functional Strength Training':     { type: 'strength',    name: 'Functional Strength' },
+  'Core Training':                    { type: 'strength',    name: 'Core Training' },
+  'Cross Training':                   { type: 'mixed',       name: 'Cross Training' },
+  'High Intensity Interval Training': { type: 'mixed',       name: 'HIIT' },
+  'HIIT':                             { type: 'mixed',       name: 'HIIT' },
+  'Mixed Cardio':                     { type: 'mixed',       name: 'Mixed Cardio' },
+  'Kickboxing':                       { type: 'mixed',       name: 'Kickboxing' },
+  'Yoga':                             { type: 'flexibility', name: 'Yoga' },
+  'Pilates':                          { type: 'flexibility', name: 'Pilates' },
+  'Barre':                            { type: 'flexibility', name: 'Barre' },
+  'Cooldown':                         { type: 'flexibility', name: 'Cooldown' },
+  'Mind & Body':                      { type: 'flexibility', name: 'Mind & Body' },
+  'Soccer':                           { type: 'sport',       name: 'Soccer' },
+  'Basketball':                       { type: 'sport',       name: 'Basketball' },
+  'Tennis':                           { type: 'sport',       name: 'Tennis' },
+  'Volleyball':                       { type: 'sport',       name: 'Volleyball' },
+  'Boxing':                           { type: 'sport',       name: 'Boxing' },
+  'Martial Arts':                     { type: 'sport',       name: 'Martial Arts' },
+  'Other':                            { type: 'mixed',       name: 'Workout' },
 };
 
-function resolveWorkoutType(activityType: string) {
-  return APPLE_HEALTH_TYPE_MAP[activityType] ?? SHORTCUTS_TYPE_MAP[activityType] ?? null;
+function resolveWorkoutType(name: string) {
+  return SHORTCUTS_TYPE_MAP[name] ?? APPLE_HEALTH_TYPE_MAP[name] ?? null;
 }
 
-// Estimate RPE (1–10) from average heart rate when no manual effort is provided
 function estimateRPE(avgHR: number | null, userMaxHR: number): number {
   if (!avgHR || userMaxHR <= 0) return 5;
   return Math.max(1, Math.min(10, Math.round((avgHR / userMaxHR) * 12)));
 }
 
-// Accept several date string formats sent by Shortcuts / Apple Health
+// Health Auto Export date format: "2026-02-20 08:00:00 +1100"
 function parseFlexibleDate(dateStr: string): Date {
-  // "2026-02-20 08:00:00 +1100" → "2026-02-20T08:00:00+11:00"
   const normalised = dateStr
     .trim()
     .replace(' ', 'T')
     .replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
   const d = new Date(normalised);
   if (!isNaN(d.getTime())) return d;
-  // fallback: try as-is
   return new Date(dateStr);
+}
+
+// Extract a plain number from a Health Auto Export qty object or plain number
+function extractQty(val: unknown): number | null {
+  if (val == null) return null;
+  if (typeof val === 'number') return val;
+  if (typeof val === 'object' && val !== null && 'qty' in val) {
+    const n = Number((val as { qty: unknown }).qty);
+    return isNaN(n) ? null : n;
+  }
+  return null;
 }
 
 async function recalcDailyStrain(date: string) {
@@ -132,13 +140,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  // Temporary: return raw body to inspect Health Auto Export's format
-  return NextResponse.json({ debug_received: body });
+  // Health Auto Export wraps everything under body.data
+  const data = body?.data ?? body;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const incomingWorkouts: any[] = data?.workouts ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const incomingMetrics: any[] = data?.metrics ?? [];
 
-  const incomingWorkouts: any[] = body.workouts ?? [];
-  const incomingSteps: any[] = body.steps ?? [];
-
-  // User settings (for max HR → RPE estimation)
   const settings = await db.select().from(userSettings).get();
   const userMaxHR = settings?.max_heart_rate ?? 190;
 
@@ -148,7 +156,7 @@ export async function POST(request: NextRequest) {
 
   // --- Workouts ---
   for (const w of incomingWorkouts) {
-    // Deduplicate by apple_health_id
+    // Deduplicate by apple_health_id (v2 sends a UUID as "id")
     if (w.id) {
       const existing = await db
         .select({ id: workouts.id })
@@ -158,27 +166,41 @@ export async function POST(request: NextRequest) {
       if (existing) { skippedWorkouts++; continue; }
     }
 
-    // Map activity type — handles both HK strings and Shortcuts display names
-    const mapping = resolveWorkoutType(w.activityType);
+    // Health Auto Export uses "name" for the workout type display name
+    const mapping = resolveWorkoutType(w.name ?? '');
     if (!mapping) { skippedWorkouts++; continue; }
 
-    const startDate = parseFlexibleDate(w.startDate);
+    // Health Auto Export uses "start" / "end" (not "startDate" / "endDate")
+    const startDate = parseFlexibleDate(w.start ?? w.startDate ?? '');
     if (isNaN(startDate.getTime())) { skippedWorkouts++; continue; }
 
-    const endDate = w.endDate ? parseFlexibleDate(w.endDate) : null;
+    const endDate = (w.end ?? w.endDate) ? parseFlexibleDate(w.end ?? w.endDate) : null;
+
+    // "duration" is in seconds in Health Auto Export
     let durationMinutes: number;
     if (w.duration != null) {
-      durationMinutes = Number(w.duration);
+      durationMinutes = Math.round(Number(w.duration) / 60);
     } else if (endDate != null) {
-      durationMinutes = Math.round((endDate!.getTime() - startDate.getTime()) / 60000);
+      durationMinutes = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
     } else {
       durationMinutes = 0;
     }
 
     if (durationMinutes <= 0) { skippedWorkouts++; continue; }
 
-    const avgHR = w.avgHeartRate ? Math.round(Number(w.avgHeartRate)) : null;
-    const maxHR = w.maxHeartRate ? Math.round(Number(w.maxHeartRate)) : null;
+    // Heart rate: Health Auto Export sends { qty, units } objects
+    const avgHR = w.avgHeartRate != null
+      ? Math.round(extractQty(w.avgHeartRate) ?? 0) || null
+      : extractQty(w.heartRate?.avg) != null
+        ? Math.round(extractQty(w.heartRate.avg)!)
+        : null;
+
+    const maxHR = w.maxHeartRate != null
+      ? Math.round(extractQty(w.maxHeartRate) ?? 0) || null
+      : extractQty(w.heartRate?.max) != null
+        ? Math.round(extractQty(w.heartRate.max)!)
+        : null;
+
     const rpe = estimateRPE(avgHR, userMaxHR);
 
     const strainScore = calculateStrainScore({
@@ -192,16 +214,22 @@ export async function POST(request: NextRequest) {
 
     const dateKey = format(startDate, 'yyyy-MM-dd');
 
+    // Calories: v1 uses "totalEnergy" or "activeEnergy" (scalar), v2 uses "activeEnergyBurned"
+    const caloriesQty =
+      extractQty(w.activeEnergyBurned) ??
+      extractQty(w.totalEnergy) ??
+      extractQty(w.activeEnergy);
+
     await db.insert(workouts).values({
       type: mapping.type,
-      name: w.name ?? mapping.name,
+      name: mapping.name,
       started_at: startDate.toISOString(),
       ended_at: endDate?.toISOString() ?? null,
       duration_minutes: durationMinutes,
       perceived_effort: rpe,
       avg_heart_rate: avgHR,
       max_heart_rate: maxHR,
-      calories: w.calories != null ? Math.round(Number(w.calories)) : null,
+      calories: caloriesQty != null ? Math.round(caloriesQty) : null,
       strain_score: strainScore,
       source: 'apple_health',
       apple_health_id: w.id ? String(w.id) : null,
@@ -212,29 +240,37 @@ export async function POST(request: NextRequest) {
     importedWorkouts++;
   }
 
-  // --- Steps ---
+  // --- Steps (in metrics array, metric name "step_count") ---
   let importedSteps = 0;
-  for (const s of incomingSteps) {
-    if (!s.date || s.count == null) continue;
-    await db
-      .insert(dailyStrain)
-      .values({
-        date: s.date,
-        strain_score: 0,
-        workout_count: 0,
-        total_duration: 0,
-        total_volume: 0,
-        total_calories: 0,
-        steps: Math.round(Number(s.count)),
-      })
-      .onConflictDoUpdate({
-        target: dailyStrain.date,
-        set: { steps: Math.round(Number(s.count)) },
-      });
-    importedSteps++;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const stepMetric = incomingMetrics.find((m: any) => m.name === 'step_count');
+  if (stepMetric?.data) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const entry of stepMetric.data as any[]) {
+      const qty = extractQty(entry) ?? (entry.qty != null ? Number(entry.qty) : null);
+      if (qty == null || !entry.date) continue;
+
+      const dateKey = entry.date.substring(0, 10); // "yyyy-MM-dd"
+      await db
+        .insert(dailyStrain)
+        .values({
+          date: dateKey,
+          strain_score: 0,
+          workout_count: 0,
+          total_duration: 0,
+          total_volume: 0,
+          total_calories: 0,
+          steps: Math.round(qty),
+        })
+        .onConflictDoUpdate({
+          target: dailyStrain.date,
+          set: { steps: Math.round(qty) },
+        });
+      importedSteps++;
+    }
   }
 
-  // --- Recalculate daily strain for affected dates ---
+  // --- Recalculate daily strain for affected workout dates ---
   for (const date of affectedDates) {
     await recalcDailyStrain(date);
   }

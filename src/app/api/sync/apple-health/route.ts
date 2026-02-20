@@ -124,12 +124,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let body: { workouts?: any[]; steps?: any[] };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let body: any;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
+
+  // Temporary: return raw body to inspect Health Auto Export's format
+  return NextResponse.json({ debug_received: body });
 
   const incomingWorkouts: any[] = body.workouts ?? [];
   const incomingSteps: any[] = body.steps ?? [];
@@ -162,12 +166,14 @@ export async function POST(request: NextRequest) {
     if (isNaN(startDate.getTime())) { skippedWorkouts++; continue; }
 
     const endDate = w.endDate ? parseFlexibleDate(w.endDate) : null;
-    const durationMinutes: number =
-      w.duration != null
-        ? Number(w.duration)
-        : endDate != null
-          ? Math.round((endDate.getTime() - startDate.getTime()) / 60000)
-          : 0;
+    let durationMinutes: number;
+    if (w.duration != null) {
+      durationMinutes = Number(w.duration);
+    } else if (endDate != null) {
+      durationMinutes = Math.round((endDate!.getTime() - startDate.getTime()) / 60000);
+    } else {
+      durationMinutes = 0;
+    }
 
     if (durationMinutes <= 0) { skippedWorkouts++; continue; }
 

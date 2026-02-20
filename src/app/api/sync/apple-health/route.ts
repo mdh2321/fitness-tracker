@@ -7,6 +7,53 @@ import { APPLE_HEALTH_TYPE_MAP } from '@/lib/constants';
 import { format } from 'date-fns';
 import type { WorkoutType } from '@/lib/constants';
 
+// Display names sent by Apple Shortcuts (not HK type strings)
+const SHORTCUTS_TYPE_MAP: Record<string, { type: WorkoutType; name: string }> = {
+  'Running':                        { type: 'cardio',      name: 'Running' },
+  'Outdoor Run':                    { type: 'cardio',      name: 'Running' },
+  'Indoor Run':                     { type: 'cardio',      name: 'Running' },
+  'Cycling':                        { type: 'cardio',      name: 'Cycling' },
+  'Outdoor Cycling':                { type: 'cardio',      name: 'Cycling' },
+  'Indoor Cycling':                 { type: 'cardio',      name: 'Cycling' },
+  'Swimming':                       { type: 'cardio',      name: 'Swimming' },
+  'Open Water Swimming':            { type: 'cardio',      name: 'Swimming' },
+  'Pool Swimming':                  { type: 'cardio',      name: 'Swimming' },
+  'Walking':                        { type: 'cardio',      name: 'Walking' },
+  'Outdoor Walk':                   { type: 'cardio',      name: 'Walking' },
+  'Indoor Walk':                    { type: 'cardio',      name: 'Walking' },
+  'Hiking':                         { type: 'cardio',      name: 'Hiking' },
+  'Elliptical':                     { type: 'cardio',      name: 'Elliptical' },
+  'Rowing':                         { type: 'cardio',      name: 'Rowing' },
+  'Stair Climbing':                 { type: 'cardio',      name: 'Stair Climbing' },
+  'Jump Rope':                      { type: 'cardio',      name: 'Jump Rope' },
+  'Dance':                          { type: 'cardio',      name: 'Dance' },
+  'Step Training':                  { type: 'cardio',      name: 'Step Training' },
+  'Traditional Strength Training':  { type: 'strength',    name: 'Strength Training' },
+  'Functional Strength Training':   { type: 'strength',    name: 'Functional Strength' },
+  'Core Training':                  { type: 'strength',    name: 'Core Training' },
+  'Cross Training':                 { type: 'mixed',       name: 'Cross Training' },
+  'High Intensity Interval Training': { type: 'mixed',     name: 'HIIT' },
+  'HIIT':                           { type: 'mixed',       name: 'HIIT' },
+  'Mixed Cardio':                   { type: 'mixed',       name: 'Mixed Cardio' },
+  'Kickboxing':                     { type: 'mixed',       name: 'Kickboxing' },
+  'Yoga':                           { type: 'flexibility', name: 'Yoga' },
+  'Pilates':                        { type: 'flexibility', name: 'Pilates' },
+  'Barre':                          { type: 'flexibility', name: 'Barre' },
+  'Cooldown':                       { type: 'flexibility', name: 'Cooldown' },
+  'Mind & Body':                    { type: 'flexibility', name: 'Mind & Body' },
+  'Soccer':                         { type: 'sport',       name: 'Soccer' },
+  'Basketball':                     { type: 'sport',       name: 'Basketball' },
+  'Tennis':                         { type: 'sport',       name: 'Tennis' },
+  'Volleyball':                     { type: 'sport',       name: 'Volleyball' },
+  'Boxing':                         { type: 'sport',       name: 'Boxing' },
+  'Martial Arts':                   { type: 'sport',       name: 'Martial Arts' },
+  'Other':                          { type: 'mixed',       name: 'Workout' },
+};
+
+function resolveWorkoutType(activityType: string) {
+  return APPLE_HEALTH_TYPE_MAP[activityType] ?? SHORTCUTS_TYPE_MAP[activityType] ?? null;
+}
+
 // Estimate RPE (1–10) from average heart rate when no manual effort is provided
 function estimateRPE(avgHR: number | null, userMaxHR: number): number {
   if (!avgHR || userMaxHR <= 0) return 5;
@@ -108,8 +155,8 @@ export async function POST(request: NextRequest) {
       if (existing) { skippedWorkouts++; continue; }
     }
 
-    // Map HK activity type
-    const mapping = APPLE_HEALTH_TYPE_MAP[w.activityType];
+    // Map activity type — handles both HK strings and Shortcuts display names
+    const mapping = resolveWorkoutType(w.activityType);
     if (!mapping) { skippedWorkouts++; continue; }
 
     const startDate = parseFlexibleDate(w.startDate);

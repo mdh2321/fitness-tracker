@@ -119,15 +119,14 @@ async function recalcDailyStrain(date: string) {
 }
 
 export async function POST(request: NextRequest) {
-  // --- Auth temporarily disabled for debugging ---
+  const apiKey = request.headers.get('x-api-key');
+  if (!apiKey || apiKey !== process.env.SYNC_API_KEY) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   let body: { workouts?: any[]; steps?: any[] };
-  let rawBody: any;
   try {
-    rawBody = await request.json();
-    body = rawBody;
-    // Temporary: return raw body so we can inspect Health Auto Export's format
-    return NextResponse.json({ debug_received: rawBody });
+    body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
@@ -163,9 +162,12 @@ export async function POST(request: NextRequest) {
     if (isNaN(startDate.getTime())) { skippedWorkouts++; continue; }
 
     const endDate = w.endDate ? parseFlexibleDate(w.endDate) : null;
-    const durationMinutes =
-      w.duration ??
-      (endDate ? Math.round((endDate.getTime() - startDate.getTime()) / 60000) : 0);
+    const durationMinutes: number =
+      w.duration != null
+        ? Number(w.duration)
+        : endDate != null
+          ? Math.round((endDate.getTime() - startDate.getTime()) / 60000)
+          : 0;
 
     if (durationMinutes <= 0) { skippedWorkouts++; continue; }
 

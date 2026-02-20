@@ -126,6 +126,10 @@ async function recalcDailyStrain(date: string) {
     });
 }
 
+export async function GET() {
+  return NextResponse.json({ ok: true });
+}
+
 export async function POST(request: NextRequest) {
   const apiKey = request.headers.get('x-api-key');
   if (!apiKey || apiKey !== process.env.SYNC_API_KEY) {

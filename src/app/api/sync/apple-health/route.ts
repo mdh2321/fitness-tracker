@@ -249,28 +249,35 @@ export async function POST(request: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stepMetric = incomingMetrics.find((m: any) => m.name === 'step_count');
   if (stepMetric?.data) {
+    // Build step rows, deduplicated by date (keep the last entry per date)
+    const stepsByDate = new Map<string, number>();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const entry of stepMetric.data as any[]) {
       const qty = extractQty(entry) ?? (entry.qty != null ? Number(entry.qty) : null);
       if (qty == null || !entry.date) continue;
+      const dateKey = entry.date.substring(0, 10);
+      stepsByDate.set(dateKey, Math.round(qty));
+    }
 
-      const dateKey = entry.date.substring(0, 10); // "yyyy-MM-dd"
+    // Insert all step days in one batch
+    if (stepsByDate.size > 0) {
+      const stepRows = Array.from(stepsByDate.entries()).map(([date, steps]) => ({
+        date,
+        strain_score: 0 as number,
+        workout_count: 0,
+        total_duration: 0,
+        total_volume: 0 as number,
+        total_calories: 0,
+        steps,
+      }));
       await db
         .insert(dailyStrain)
-        .values({
-          date: dateKey,
-          strain_score: 0,
-          workout_count: 0,
-          total_duration: 0,
-          total_volume: 0,
-          total_calories: 0,
-          steps: Math.round(qty),
-        })
+        .values(stepRows)
         .onConflictDoUpdate({
           target: dailyStrain.date,
-          set: { steps: Math.round(qty) },
+          set: { steps: sql`excluded.steps` },
         });
-      importedSteps++;
+      importedSteps = stepsByDate.size;
     }
   }
 

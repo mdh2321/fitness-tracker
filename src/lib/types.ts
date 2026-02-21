@@ -61,6 +61,7 @@ export interface UserSettings {
   weight_kg: number;
   birth_year: number;
   max_heart_rate: number;
+  resting_hr: number;
   weekly_workout_target: number;
   weekly_cardio_minutes_target: number;
   weekly_strength_sessions_target: number;

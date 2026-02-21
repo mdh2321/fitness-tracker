@@ -59,9 +59,10 @@ function resolveWorkoutType(name: string) {
   return SHORTCUTS_TYPE_MAP[name] ?? APPLE_HEALTH_TYPE_MAP[name] ?? null;
 }
 
-function estimateRPE(avgHR: number | null, userMaxHR: number): number {
-  if (!avgHR || userMaxHR <= 0) return 5;
-  return Math.max(1, Math.min(10, Math.round((avgHR / userMaxHR) * 12)));
+function estimateRPE(avgHR: number | null, userMaxHR: number, userRestingHR: number): number {
+  if (!avgHR || userMaxHR <= userRestingHR) return 5;
+  const hrr = Math.max(0, (avgHR - userRestingHR) / (userMaxHR - userRestingHR));
+  return Math.max(1, Math.min(10, Math.round(hrr * 10)));
 }
 
 // Health Auto Export date format: "2026-02-20 08:00:00 +1100"
@@ -175,6 +176,7 @@ export async function POST(request: NextRequest) {
 
   const settings = await db.select().from(userSettings).get();
   const userMaxHR = settings?.max_heart_rate ?? 190;
+  const userRestingHR = settings?.resting_hr ?? 60;
 
   let importedWorkouts = 0;
   let skippedWorkouts = 0;
@@ -227,7 +229,7 @@ export async function POST(request: NextRequest) {
         ? Math.round(extractQty(w.heartRate.max)!)
         : null;
 
-    const rpe = estimateRPE(avgHR, userMaxHR);
+    const rpe = estimateRPE(avgHR, userMaxHR, userRestingHR);
 
     const strainScore = calculateStrainScore({
       duration_minutes: durationMinutes,
@@ -236,6 +238,7 @@ export async function POST(request: NextRequest) {
       avg_heart_rate: avgHR,
       max_heart_rate: maxHR,
       user_max_heart_rate: userMaxHR,
+      user_resting_heart_rate: userRestingHR,
     });
 
     const dateKey = format(startDate, 'yyyy-MM-dd');

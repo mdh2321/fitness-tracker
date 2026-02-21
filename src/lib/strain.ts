@@ -8,6 +8,7 @@ interface StrainInput {
   avg_heart_rate?: number | null;
   max_heart_rate?: number | null;
   user_max_heart_rate?: number; // from settings
+  user_resting_heart_rate?: number; // from settings
 }
 
 const TYPE_MULTIPLIERS: Record<WorkoutType, number> = {
@@ -27,16 +28,20 @@ export function calculateStrainScore(input: StrainInput): number {
     avg_heart_rate,
     max_heart_rate,
     user_max_heart_rate = 190,
+    user_resting_heart_rate = 60,
   } = input;
 
-  // Intensity: blend HR data with RPE
+  // Intensity: Karvonen (heart rate reserve) method blended with RPE
   let intensity: number;
   const rpeIntensity = perceived_effort / 10;
+  const hrReserve = user_max_heart_rate - user_resting_heart_rate;
 
-  if (avg_heart_rate && max_heart_rate && user_max_heart_rate > 0) {
-    const hrIntensity = avg_heart_rate / user_max_heart_rate;
-    const peakHrIntensity = max_heart_rate / user_max_heart_rate;
-    const hrBlend = hrIntensity * 0.7 + peakHrIntensity * 0.3;
+  if (avg_heart_rate && hrReserve > 0) {
+    const avgHRR = Math.max(0, (avg_heart_rate - user_resting_heart_rate) / hrReserve);
+    const peakHRR = max_heart_rate
+      ? Math.max(0, (max_heart_rate - user_resting_heart_rate) / hrReserve)
+      : avgHRR;
+    const hrBlend = avgHRR * 0.7 + peakHRR * 0.3;
     intensity = hrBlend * 0.7 + rpeIntensity * 0.3;
   } else {
     intensity = rpeIntensity;

@@ -24,6 +24,7 @@ export default function SettingsPage() {
         weight_kg: parseFloat(data.weight_kg),
         birth_year: parseInt(data.birth_year),
         max_heart_rate: parseInt(data.max_heart_rate),
+        resting_hr: parseInt(data.resting_hr),
         weekly_workout_target: parseInt(data.weekly_workout_target),
         weekly_cardio_minutes_target: parseInt(data.weekly_cardio_minutes_target),
         weekly_strength_sessions_target: parseInt(data.weekly_strength_sessions_target),
@@ -59,10 +60,17 @@ export default function SettingsPage() {
                 <Input type="number" {...register('birth_year')} />
               </div>
             </div>
-            <div>
-              <Label>Max Heart Rate (bpm)</Label>
-              <Input type="number" {...register('max_heart_rate')} />
-              <p className="text-xs text-gray-500 mt-1">Formula: 220 - age. Override if you know yours.</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Max Heart Rate (bpm)</Label>
+                <Input type="number" {...register('max_heart_rate')} />
+                <p className="text-xs text-gray-500 mt-1">Highest HR ever recorded</p>
+              </div>
+              <div>
+                <Label>Resting Heart Rate (bpm)</Label>
+                <Input type="number" {...register('resting_hr')} />
+                <p className="text-xs text-gray-500 mt-1">Morning resting HR</p>
+              </div>
             </div>
           </CardContent>
         </Card>

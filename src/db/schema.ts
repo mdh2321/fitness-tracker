@@ -5,6 +5,7 @@ export const userSettings = sqliteTable('user_settings', {
   weight_kg: real('weight_kg').notNull().default(70),
   birth_year: integer('birth_year').notNull().default(1990),
   max_heart_rate: integer('max_heart_rate').notNull().default(190),
+  resting_hr: integer('resting_hr').notNull().default(60),
   weekly_workout_target: integer('weekly_workout_target').notNull().default(4),
   weekly_cardio_minutes_target: integer('weekly_cardio_minutes_target').notNull().default(150),
   weekly_strength_sessions_target: integer('weekly_strength_sessions_target').notNull().default(3),

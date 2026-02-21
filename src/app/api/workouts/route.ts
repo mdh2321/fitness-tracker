@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { workouts, exercises, exerciseSets, dailyStrain } from '@/db/schema';
+import { workouts, exercises, exerciseSets, dailyStrain, userSettings } from '@/db/schema';
 import { desc, eq, sql, and, gte, lte } from 'drizzle-orm';
 import { calculateStrainScore, aggregateDailyStrain, calculateTotalVolume } from '@/lib/strain';
 import { evaluateAchievements } from '@/lib/achievements';
@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
   const totalVolume = calculateTotalVolume(allSets);
 
   // Calculate strain score
+  const settings = await db.select().from(userSettings).get();
   const strainScore = calculateStrainScore({
     duration_minutes,
     perceived_effort,
@@ -64,6 +65,8 @@ export async function POST(request: NextRequest) {
     total_volume: totalVolume,
     avg_heart_rate,
     max_heart_rate,
+    user_max_heart_rate: settings?.max_heart_rate ?? 190,
+    user_resting_heart_rate: settings?.resting_hr ?? 60,
   });
 
   // Insert workout

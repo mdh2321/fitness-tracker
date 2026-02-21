@@ -3,8 +3,8 @@ import type { Workout, WorkoutWithExercises } from '@/lib/types';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-export function useWorkouts(limit = 50) {
-  return useSWR<Workout[]>(`/api/workouts?limit=${limit}`, fetcher);
+export function useWorkouts(limit = 50, offset = 0) {
+  return useSWR<Workout[]>(`/api/workouts?limit=${limit}&offset=${offset}`, fetcher);
 }
 
 export function useWorkout(id: number | string | null) {

@@ -1,13 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useWorkouts } from '@/hooks/use-workouts';
 import { WorkoutCard } from '@/components/workout/workout-card';
 import { Button } from '@/components/ui/button';
 import { Plus, Dumbbell } from 'lucide-react';
+import type { Workout } from '@/lib/types';
+
+const PAGE_SIZE = 50;
 
 export default function WorkoutsPage() {
-  const { data: workouts, isLoading } = useWorkouts();
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const { data: workouts, isLoading } = useWorkouts(limit);
+
+  const canLoadMore = workouts && workouts.length === limit;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -43,9 +50,17 @@ export default function WorkoutsPage() {
 
       {workouts && workouts.length > 0 && (
         <div className="space-y-3">
-          {workouts.map((workout) => (
+          {workouts.map((workout: Workout) => (
             <WorkoutCard key={workout.id} workout={workout} />
           ))}
+        </div>
+      )}
+
+      {canLoadMore && (
+        <div className="flex justify-center pt-2">
+          <Button variant="ghost" onClick={() => setLimit(l => l + PAGE_SIZE)}>
+            Load more
+          </Button>
         </div>
       )}
     </div>

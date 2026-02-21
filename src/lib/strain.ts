@@ -14,7 +14,7 @@ interface StrainInput {
 const TYPE_MULTIPLIERS: Record<WorkoutType, number> = {
   cardio: 1.1,
   mixed: 1.15,
-  strength: 1.0,
+  strength: 1.2,
   sport: 1.05,
   flexibility: 0.5,
 };
@@ -41,7 +41,11 @@ export function calculateStrainScore(input: StrainInput): number {
     const peakHRR = max_heart_rate
       ? Math.max(0, (max_heart_rate - user_resting_heart_rate) / hrReserve)
       : avgHRR;
-    const hrBlend = avgHRR * 0.7 + peakHRR * 0.3;
+    // Strength training: weight peak HR heavily since rest periods suppress avg HR
+    // Cardio/other: avg HR is a reliable continuous signal
+    const hrBlend = type === 'strength'
+      ? avgHRR * 0.3 + peakHRR * 0.7
+      : avgHRR * 0.7 + peakHRR * 0.3;
     intensity = hrBlend * 0.7 + rpeIntensity * 0.3;
   } else {
     intensity = rpeIntensity;

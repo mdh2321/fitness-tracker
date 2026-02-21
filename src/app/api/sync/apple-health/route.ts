@@ -86,6 +86,22 @@ function extractQty(val: unknown): number | null {
   return null;
 }
 
+// Extract calories as kcal, converting from kJ if needed (AutoExport sends kJ)
+function extractKcal(val: unknown): number | null {
+  if (val == null) return null;
+  if (typeof val === 'number') return val;
+  if (typeof val === 'object' && val !== null && 'qty' in val) {
+    const qty = Number((val as { qty: unknown }).qty);
+    if (isNaN(qty)) return null;
+    const units = (val as { units?: unknown }).units;
+    if (typeof units === 'string' && units.toLowerCase() === 'kj') {
+      return qty / 4.184;
+    }
+    return qty;
+  }
+  return null;
+}
+
 async function recalcDailyStrain(date: string) {
   const dayStart = new Date(`${date}T00:00:00`).toISOString();
   const dayEnd = new Date(new Date(`${date}T00:00:00`).getTime() + 86400000).toISOString();
@@ -225,10 +241,11 @@ export async function POST(request: NextRequest) {
     const dateKey = format(startDate, 'yyyy-MM-dd');
 
     // Calories: v1 uses "totalEnergy" or "activeEnergy" (scalar), v2 uses "activeEnergyBurned"
+    // AutoExport may send kJ — extractKcal handles unit conversion
     const caloriesQty =
-      extractQty(w.activeEnergyBurned) ??
-      extractQty(w.totalEnergy) ??
-      extractQty(w.activeEnergy);
+      extractKcal(w.activeEnergyBurned) ??
+      extractKcal(w.totalEnergy) ??
+      extractKcal(w.activeEnergy);
 
     await db.insert(workouts).values({
       type: mapping.type,

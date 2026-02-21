@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { WORKOUT_TYPE_LABELS, getStrainColor, getStrainLabel } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
-import { Clock, Flame, Activity, ChevronRight } from 'lucide-react';
+import { Clock, Flame, Activity, Heart, ChevronRight } from 'lucide-react';
 import type { Workout } from '@/lib/types';
 import type { WorkoutType } from '@/lib/constants';
 
@@ -29,10 +29,18 @@ export function WorkoutCard({ workout }: { workout: Workout }) {
                 <Clock className="h-3.5 w-3.5" />
                 {workout.duration_minutes}m
               </span>
-              <span className="flex items-center gap-1 text-sm text-gray-400">
-                <Activity className="h-3.5 w-3.5" />
-                RPE {workout.perceived_effort}
-              </span>
+              {workout.source === 'manual' && (
+                <span className="flex items-center gap-1 text-sm text-gray-400">
+                  <Activity className="h-3.5 w-3.5" />
+                  RPE {workout.perceived_effort}
+                </span>
+              )}
+              {workout.source === 'apple_health' && workout.avg_heart_rate && (
+                <span className="flex items-center gap-1 text-sm text-gray-400">
+                  <Heart className="h-3.5 w-3.5 text-[#ff3b5c]" />
+                  {workout.avg_heart_rate} bpm
+                </span>
+              )}
               {workout.calories && (
                 <span className="flex items-center gap-1 text-sm text-gray-400">
                   <Flame className="h-3.5 w-3.5" />

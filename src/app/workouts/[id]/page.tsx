@@ -78,13 +78,33 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
               </div>
               <div className="text-xs text-gray-500 mt-1">Minutes</div>
             </div>
-            <div className="text-center p-3 rounded-lg bg-[#0a0a0f]">
-              <div className="flex items-center justify-center gap-1 text-2xl font-bold text-gray-100 tabular-nums">
-                <Activity className="h-5 w-5 text-gray-400" />
-                {workout.perceived_effort}
+            {workout.source === 'manual' && (
+              <div className="text-center p-3 rounded-lg bg-[#0a0a0f]">
+                <div className="flex items-center justify-center gap-1 text-2xl font-bold text-gray-100 tabular-nums">
+                  <Activity className="h-5 w-5 text-gray-400" />
+                  {workout.perceived_effort}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">RPE</div>
               </div>
-              <div className="text-xs text-gray-500 mt-1">RPE</div>
-            </div>
+            )}
+            {workout.source === 'apple_health' && workout.avg_heart_rate && (
+              <div className="text-center p-3 rounded-lg bg-[#0a0a0f]">
+                <div className="flex items-center justify-center gap-1 text-2xl font-bold text-gray-100 tabular-nums">
+                  <Heart className="h-5 w-5 text-[#ff3b5c]" />
+                  {workout.avg_heart_rate}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">Avg HR (bpm)</div>
+              </div>
+            )}
+            {workout.source === 'apple_health' && workout.max_heart_rate && (
+              <div className="text-center p-3 rounded-lg bg-[#0a0a0f]">
+                <div className="flex items-center justify-center gap-1 text-2xl font-bold text-gray-100 tabular-nums">
+                  <Heart className="h-5 w-5 text-[#ff3b5c]" />
+                  {workout.max_heart_rate}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">Max HR (bpm)</div>
+              </div>
+            )}
             {workout.calories && (
               <div className="text-center p-3 rounded-lg bg-[#0a0a0f]">
                 <div className="flex items-center justify-center gap-1 text-2xl font-bold text-gray-100 tabular-nums">
@@ -95,14 +115,6 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
               </div>
             )}
           </div>
-
-          {(workout.avg_heart_rate || workout.max_heart_rate) && (
-            <div className="flex items-center gap-4 mb-6 p-3 rounded-lg bg-[#0a0a0f]">
-              <Heart className="h-5 w-5 text-[#ff3b5c]" />
-              {workout.avg_heart_rate && <span className="text-sm text-gray-300">Avg: <strong>{workout.avg_heart_rate}</strong> bpm</span>}
-              {workout.max_heart_rate && <span className="text-sm text-gray-300">Max: <strong>{workout.max_heart_rate}</strong> bpm</span>}
-            </div>
-          )}
 
           {workout.exercises && workout.exercises.length > 0 && (
             <div className="space-y-4">

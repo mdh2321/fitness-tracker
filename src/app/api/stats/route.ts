@@ -7,9 +7,12 @@ import { calculateExerciseStreak } from '@/lib/streaks';
 import { format, subDays, startOfWeek, endOfWeek, parseISO, getDaysInMonth, startOfMonth, addDays } from 'date-fns';
 
 export async function GET(request: NextRequest) {
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
-  const weekEnd = format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+  // Use client-supplied date to avoid UTC vs local timezone mismatch on Vercel
+  const { searchParams } = new URL(request.url);
+  const today = searchParams.get('date') || format(new Date(), 'yyyy-MM-dd');
+  const now = parseISO(today);
+  const weekStart = format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+  const weekEnd = format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
 
   // Today's stats
   const todayStrain = await db
@@ -72,7 +75,7 @@ export async function GET(request: NextRequest) {
   // Last 7 days strain
   const last7Days = [];
   for (let i = 6; i >= 0; i--) {
-    const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
+    const date = format(subDays(now, i), 'yyyy-MM-dd');
     const strain = await db.select().from(dailyStrain).where(eq(dailyStrain.date, date)).get();
     last7Days.push({
       date,
@@ -86,7 +89,6 @@ export async function GET(request: NextRequest) {
   }
 
   // Current month data for streaks month view
-  const now = new Date();
   const monthStartDate = startOfMonth(now);
   const daysInMonth = getDaysInMonth(now);
   const monthDays = [];
@@ -97,7 +99,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 4-week rolling averages
-  const fourWeeksAgo = format(subDays(new Date(), 28), 'yyyy-MM-dd');
+  const fourWeeksAgo = format(subDays(now, 28), 'yyyy-MM-dd');
   const recentStrain = await db
     .select()
     .from(dailyStrain)
@@ -144,7 +146,7 @@ export async function GET(request: NextRequest) {
     last7DaysMinutes: (() => {
       const result = [];
       for (let i = 6; i >= 0; i--) {
-        const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
+        const date = format(subDays(now, i), 'yyyy-MM-dd');
         result.push({ date, totalMinutes: dailyMinutesMap[date] || 0 });
       }
       return result;

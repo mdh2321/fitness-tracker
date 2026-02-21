@@ -167,16 +167,14 @@ export async function POST(request: NextRequest) {
 
   // TEMPORARY HR DEBUG — remove once confirmed
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawMetrics: any[] = (body?.data ?? body)?.metrics ?? [];
+  const rawData = body?.data ?? body;
   console.log('[hr debug]', JSON.stringify({
-    metricNames: rawMetrics.map((m: any) => m.name),
+    topLevelKeys: Object.keys(body ?? {}),
+    dataKeys: Object.keys(rawData ?? {}),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    heartRateMetric: rawMetrics.find((m: any) => m.name?.toLowerCase().includes('heart'))
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ? { name: rawMetrics.find((m: any) => m.name?.toLowerCase().includes('heart')).name,
-          sampleCount: rawMetrics.find((m: any) => m.name?.toLowerCase().includes('heart')).data?.length,
-          firstEntry: rawMetrics.find((m: any) => m.name?.toLowerCase().includes('heart')).data?.[0] }
-      : null,
+    metricNames: (rawData?.metrics ?? []).map((m: any) => m.name),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    allMetricSampleCounts: (rawData?.metrics ?? []).map((m: any) => ({ name: m.name, count: m.data?.length })),
   }));
 
   // Health Auto Export wraps everything under body.data

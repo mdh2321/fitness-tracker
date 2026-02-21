@@ -165,6 +165,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
+  // TEMPORARY HR DEBUG — remove once field names confirmed
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawWorkouts: any[] = (body?.data ?? body)?.workouts ?? [];
+  console.log('[hr debug]', JSON.stringify(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rawWorkouts.map((w: any) => ({
+      name: w.name,
+      keys: Object.keys(w),
+      heartRate: w.heartRate,
+      avgHeartRate: w.avgHeartRate,
+      maxHeartRate: w.maxHeartRate,
+      heartRateData: w.heartRateData,
+    }))
+  ));
+
   // Health Auto Export wraps everything under body.data
   const data = body?.data ?? body;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

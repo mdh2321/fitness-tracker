@@ -59,8 +59,9 @@ export async function GET(request: NextRequest) {
   const settings = await db.select().from(userSettings).get();
 
   // Weekly progress
+  const CARDIO_ACTIVITIES = new Set(['Running', 'Cycling', 'Swimming', 'Rowing', 'HIIT']);
   const cardioMinutes = weekWorkouts
-    .filter((w) => w.type === 'cardio' || w.type === 'mixed')
+    .filter((w) => CARDIO_ACTIVITIES.has(w.name))
     .reduce((sum, w) => sum + w.duration_minutes, 0);
   const strengthSessions = weekWorkouts.filter((w) => w.type === 'strength' || w.type === 'mixed').length;
   const uniqueWorkoutDays = new Set(weekWorkouts.map((w) => format(parseISO(w.started_at), 'yyyy-MM-dd'))).size;

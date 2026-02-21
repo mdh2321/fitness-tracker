@@ -152,12 +152,12 @@ export async function POST(request: NextRequest) {
   const incomingMetrics: any[] = data?.metrics ?? [];
 
   // TEMPORARY DEBUG LOGGING — remove once issue is diagnosed
-  console.log('[sync debug] top-level keys:', Object.keys(body ?? {}));
-  console.log('[sync debug] data keys:', Object.keys(data ?? {}));
-  console.log('[sync debug] workout count:', incomingWorkouts.length);
-  if (incomingWorkouts.length > 0) {
-    console.log('[sync debug] first workout raw:', JSON.stringify(incomingWorkouts[0], null, 2));
-  }
+  console.log('[sync debug]', JSON.stringify({
+    topLevelKeys: Object.keys(body ?? {}),
+    dataKeys: Object.keys(data ?? {}),
+    workoutCount: incomingWorkouts.length,
+    firstWorkout: incomingWorkouts[0] ?? null,
+  }));
 
   const settings = await db.select().from(userSettings).get();
   const userMaxHR = settings?.max_heart_rate ?? 190;

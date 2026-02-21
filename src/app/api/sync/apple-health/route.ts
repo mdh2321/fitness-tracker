@@ -52,7 +52,7 @@ const SHORTCUTS_TYPE_MAP: Record<string, { type: WorkoutType; name: string }> = 
   'Volleyball':                       { type: 'sport',       name: 'Volleyball' },
   'Boxing':                           { type: 'sport',       name: 'Boxing' },
   'Martial Arts':                     { type: 'sport',       name: 'Martial Arts' },
-  'Other':                            { type: 'mixed',       name: 'Workout' },
+  'Other':                            { type: 'mixed',       name: 'Other' },
 };
 
 function resolveWorkoutType(name: string) {

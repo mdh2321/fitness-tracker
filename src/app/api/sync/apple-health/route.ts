@@ -156,13 +156,6 @@ export async function POST(request: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const incomingMetrics: any[] = data?.metrics ?? [];
 
-  // TEMPORARY DEBUG LOGGING — remove once issue is diagnosed
-  console.log('[sync debug]', JSON.stringify({
-    topLevelKeys: Object.keys(body ?? {}),
-    dataKeys: Object.keys(data ?? {}),
-    workoutCount: incomingWorkouts.length,
-    firstWorkout: incomingWorkouts[0] ?? null,
-  }));
 
   const settings = await db.select().from(userSettings).get();
   const userMaxHR = settings?.max_heart_rate ?? 190;
@@ -299,16 +292,6 @@ export async function POST(request: NextRequest) {
     await recalcDailyStrain(date);
   }
 
-  // TEMPORARY DEBUG — remove once issue is diagnosed
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const debugWorkouts = incomingWorkouts.map((w: any) => ({
-    id: w.id,
-    name: w.name,
-    start: w.start ?? w.startDate,
-    duration: w.duration,
-    keys: Object.keys(w),
-  }));
-
   return NextResponse.json({
     imported: {
       workouts: importedWorkouts,
@@ -316,6 +299,5 @@ export async function POST(request: NextRequest) {
       steps: importedSteps,
     },
     message: `Synced ${importedWorkouts} workout(s), ${importedSteps} day(s) of steps`,
-    debug: { receivedWorkouts: debugWorkouts },
   });
 }

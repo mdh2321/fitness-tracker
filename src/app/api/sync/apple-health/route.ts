@@ -165,20 +165,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  // TEMPORARY HR DEBUG — remove once field names confirmed
+  // TEMPORARY HR DEBUG — remove once confirmed
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawWorkouts: any[] = (body?.data ?? body)?.workouts ?? [];
-  console.log('[hr debug]', JSON.stringify(
+  const rawMetrics: any[] = (body?.data ?? body)?.metrics ?? [];
+  console.log('[hr debug]', JSON.stringify({
+    metricNames: rawMetrics.map((m: any) => m.name),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    rawWorkouts.map((w: any) => ({
-      name: w.name,
-      keys: Object.keys(w),
-      heartRate: w.heartRate,
-      avgHeartRate: w.avgHeartRate,
-      maxHeartRate: w.maxHeartRate,
-      heartRateData: w.heartRateData,
-    }))
-  ));
+    heartRateMetric: rawMetrics.find((m: any) => m.name?.toLowerCase().includes('heart'))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? { name: rawMetrics.find((m: any) => m.name?.toLowerCase().includes('heart')).name,
+          sampleCount: rawMetrics.find((m: any) => m.name?.toLowerCase().includes('heart')).data?.length,
+          firstEntry: rawMetrics.find((m: any) => m.name?.toLowerCase().includes('heart')).data?.[0] }
+      : null,
+  }));
 
   // Health Auto Export wraps everything under body.data
   const data = body?.data ?? body;

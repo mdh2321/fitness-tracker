@@ -26,6 +26,7 @@ export const WORKOUT_NAME_OPTIONS: WorkoutNameOption[] = [
   { label: 'Boxing', type: 'sport' },
   { label: 'Strength Training', type: 'strength' },
   { label: 'Yoga', type: 'flexibility' },
+  { label: 'Pilates', type: 'flexibility' },
   { label: 'Sport', type: 'sport' },
   { label: 'Other', type: 'mixed' },
 ];

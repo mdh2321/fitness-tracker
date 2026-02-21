@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { createWorkout } from '@/hooks/use-workouts';
-import { WORKOUT_TYPES, WORKOUT_TYPE_LABELS, MUSCLE_GROUPS, EXERCISE_CATEGORIES } from '@/lib/constants';
+import { WORKOUT_NAME_OPTIONS, MUSCLE_GROUPS, EXERCISE_CATEGORIES } from '@/lib/constants';
 import { Plus, Trash2, ChevronRight, ChevronLeft, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -50,6 +50,7 @@ export function WorkoutForm() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
 
   const { register, handleSubmit, watch, setValue, control } = useForm<WorkoutFormData>({
     defaultValues: {
@@ -72,7 +73,18 @@ export function WorkoutForm() {
   });
 
   const workoutType = watch('type');
+  const workoutName = watch('name');
   const exerciseList = watch('exerciseList');
+
+  const selectActivity = (label: string, type: WorkoutType) => {
+    setSelectedActivity(label);
+    setValue('type', type);
+    if (label !== 'Other') {
+      setValue('name', label);
+    } else {
+      setValue('name', '');
+    }
+  };
 
   const addExercise = () => {
     appendExercise({
@@ -134,31 +146,34 @@ export function WorkoutForm() {
       {step === 1 && (
         <Card>
           <CardHeader>
-            <CardTitle>Workout Type</CardTitle>
+            <CardTitle>Activity Type</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {WORKOUT_TYPES.map((type) => (
+              {WORKOUT_NAME_OPTIONS.map((option) => (
                 <button
-                  key={type}
+                  key={option.label}
                   type="button"
-                  onClick={() => setValue('type', type)}
+                  onClick={() => selectActivity(option.label, option.type)}
                   className={`p-3 rounded-lg border text-sm font-medium transition-all ${
-                    workoutType === type
+                    selectedActivity === option.label
                       ? 'border-[#00d26a] bg-[#00d26a]/10 text-[#00d26a]'
                       : 'border-[#2a2a35] text-gray-400 hover:border-gray-500'
                   }`}
                 >
-                  {WORKOUT_TYPE_LABELS[type]}
+                  {option.label}
                 </button>
               ))}
             </div>
 
-            <div className="space-y-3">
+            {selectedActivity === 'Other' && (
               <div>
-                <Label htmlFor="name">Workout Name</Label>
-                <Input {...register('name', { required: true })} placeholder={`e.g., ${WORKOUT_TYPE_LABELS[workoutType]} session`} />
+                <Label htmlFor="name">Activity Name</Label>
+                <Input {...register('name', { required: true })} placeholder="e.g., Pickleball, Boxing..." autoFocus />
               </div>
+            )}
+
+            <div className="space-y-3">
               <div>
                 <Label htmlFor="started_at">Date & Time</Label>
                 <Input type="datetime-local" {...register('started_at')} max={format(new Date(), "yyyy-MM-dd'T'HH:mm")} />
@@ -170,7 +185,17 @@ export function WorkoutForm() {
             </div>
 
             <div className="flex justify-end">
-              <Button type="button" onClick={() => setStep(2)}>
+              <Button
+                type="button"
+                disabled={!workoutName}
+                onClick={() => {
+                  if (!workoutName) {
+                    toast.error('Please select an activity');
+                    return;
+                  }
+                  setStep(2);
+                }}
+              >
                 Next <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             </div>

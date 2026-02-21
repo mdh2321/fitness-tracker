@@ -6,7 +6,7 @@ import { useWorkout, deleteWorkout } from '@/hooks/use-workouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { WORKOUT_TYPE_LABELS, getStrainColor, getStrainLabel } from '@/lib/constants';
+import { getStrainColor, getStrainLabel } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
 import { ArrowLeft, Clock, Flame, Activity, Heart, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -59,7 +59,7 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
               </p>
             </div>
             <Badge variant={workout.type as WorkoutType} className="text-sm">
-              {WORKOUT_TYPE_LABELS[workout.type as WorkoutType]}
+              {workout.name}
             </Badge>
           </div>
         </CardHeader>

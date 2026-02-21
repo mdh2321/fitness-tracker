@@ -2,12 +2,10 @@
 
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { WORKOUT_TYPE_LABELS, getStrainColor, getStrainLabel } from '@/lib/constants';
+import { getStrainColor, getStrainLabel } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
 import { Clock, Flame, Activity, Heart, ChevronRight } from 'lucide-react';
 import type { Workout } from '@/lib/types';
-import type { WorkoutType } from '@/lib/constants';
 
 export function WorkoutCard({ workout }: { workout: Workout }) {
   return (
@@ -17,9 +15,6 @@ export function WorkoutCard({ workout }: { workout: Workout }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="text-base font-semibold text-gray-100 truncate">{workout.name}</h3>
-              <Badge variant={workout.type as WorkoutType}>
-                {WORKOUT_TYPE_LABELS[workout.type as WorkoutType]}
-              </Badge>
             </div>
             <p className="text-sm text-gray-400">
               {format(parseISO(workout.started_at), 'MMM d, yyyy · h:mm a')}

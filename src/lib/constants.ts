@@ -10,6 +10,24 @@ export type MuscleGroup = (typeof MUSCLE_GROUPS)[number];
 export const EXERCISE_CATEGORIES = ['compound', 'isolation', 'cardio', 'flexibility', 'plyometric'] as const;
 export type ExerciseCategory = (typeof EXERCISE_CATEGORIES)[number];
 
+export interface WorkoutNameOption {
+  label: string;
+  type: WorkoutType;
+}
+
+export const WORKOUT_NAME_OPTIONS: WorkoutNameOption[] = [
+  { label: 'Walking', type: 'cardio' },
+  { label: 'Running', type: 'cardio' },
+  { label: 'Cycling', type: 'cardio' },
+  { label: 'Swimming', type: 'cardio' },
+  { label: 'Hiking', type: 'cardio' },
+  { label: 'HIIT', type: 'mixed' },
+  { label: 'Strength Training', type: 'strength' },
+  { label: 'Yoga', type: 'flexibility' },
+  { label: 'Sport', type: 'sport' },
+  { label: 'Other', type: 'mixed' },
+];
+
 export const WORKOUT_TYPE_LABELS: Record<WorkoutType, string> = {
   strength: 'Strength',
   cardio: 'Cardio',

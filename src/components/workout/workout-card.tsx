@@ -2,15 +2,19 @@
 
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
-import { getStrainColor, getStrainLabel } from '@/lib/constants';
+import { getStrainColor, getStrainLabel, getWorkoutColor } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
 import { Clock, Flame, Activity, Heart, ChevronRight } from 'lucide-react';
 import type { Workout } from '@/lib/types';
+import type { WorkoutType } from '@/lib/constants';
 
 export function WorkoutCard({ workout }: { workout: Workout }) {
   return (
     <Link href={`/workouts/${workout.id}`}>
-      <Card className="hover:border-[#3a3a45] transition-colors cursor-pointer">
+      <Card
+        className="hover:border-[#3a3a45] transition-colors cursor-pointer overflow-hidden"
+        style={{ borderLeftColor: getWorkoutColor(workout.name, workout.type as WorkoutType), borderLeftWidth: '3px' }}
+      >
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { WORKOUT_TYPE_COLORS, WORKOUT_TYPE_LABELS } from '@/lib/constants';
+import { getWorkoutColor } from '@/lib/constants';
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import type { Workout } from '@/lib/types';
 import type { WorkoutType } from '@/lib/constants';
@@ -14,20 +14,21 @@ interface FitnessSummaryProps {
 
 type ViewMode = 'time' | 'count';
 
-function TypeRow({ type, count, minutes, maxValue, mode }: { type: WorkoutType; count: number; minutes: number; maxValue: number; mode: ViewMode }) {
+function NameRow({ name, type, count, minutes, maxValue, mode }: { name: string; type: WorkoutType; count: number; minutes: number; maxValue: number; mode: ViewMode }) {
   const value = mode === 'time' ? minutes : count;
   const pct = maxValue > 0 ? (value / maxValue) * 100 : 0;
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
+  const color = getWorkoutColor(name, type);
 
   return (
     <div className="flex items-center gap-3 py-1.5">
-      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: WORKOUT_TYPE_COLORS[type] }} />
-      <span className="text-sm text-gray-300 w-20 flex-shrink-0">{WORKOUT_TYPE_LABELS[type]}</span>
+      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+      <span className="text-sm text-gray-300 w-28 flex-shrink-0 truncate">{name}</span>
       <div className="flex-1 h-2 rounded-full bg-[#1a1a24] overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
-          style={{ width: `${pct}%`, backgroundColor: WORKOUT_TYPE_COLORS[type] }}
+          style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
       <span className="text-sm font-medium text-gray-200 tabular-nums w-20 text-right flex-shrink-0">
@@ -43,14 +44,14 @@ function TypeRow({ type, count, minutes, maxValue, mode }: { type: WorkoutType; 
 
 function BreakdownView({ workouts, mode }: { workouts: Workout[]; mode: ViewMode }) {
   const breakdown = useMemo(() => {
-    const totals: Record<string, { count: number; minutes: number }> = {};
+    const totals: Record<string, { count: number; minutes: number; type: WorkoutType }> = {};
     for (const w of workouts) {
-      if (!totals[w.type]) totals[w.type] = { count: 0, minutes: 0 };
-      totals[w.type].count++;
-      totals[w.type].minutes += w.duration_minutes;
+      if (!totals[w.name]) totals[w.name] = { count: 0, minutes: 0, type: w.type as WorkoutType };
+      totals[w.name].count++;
+      totals[w.name].minutes += w.duration_minutes;
     }
     return Object.entries(totals)
-      .map(([type, data]) => ({ type: type as WorkoutType, ...data }))
+      .map(([name, data]) => ({ name, ...data }))
       .sort((a, b) => (mode === 'time' ? b.minutes - a.minutes : b.count - a.count));
   }, [workouts, mode]);
 
@@ -67,14 +68,14 @@ function BreakdownView({ workouts, mode }: { workouts: Workout[]; mode: ViewMode
 
   return (
     <div className="space-y-3">
-      {/* Percentage bar */}
+      {/* Stacked percentage bar */}
       <div className="flex h-3 rounded-full overflow-hidden">
         {breakdown.map((b) => {
           const pct = totalMinutes > 0 ? (b.minutes / totalMinutes) * 100 : 0;
           return (
             <div
-              key={b.type}
-              style={{ width: `${pct}%`, backgroundColor: WORKOUT_TYPE_COLORS[b.type] }}
+              key={b.name}
+              style={{ width: `${pct}%`, backgroundColor: getWorkoutColor(b.name, b.type) }}
               className="transition-all duration-500"
             />
           );
@@ -97,10 +98,10 @@ function BreakdownView({ workouts, mode }: { workouts: Workout[]; mode: ViewMode
         )}
       </div>
 
-      {/* Per-type rows */}
+      {/* Per-activity rows */}
       <div>
         {breakdown.map((b) => (
-          <TypeRow key={b.type} type={b.type} count={b.count} minutes={b.minutes} maxValue={maxValue} mode={mode} />
+          <NameRow key={b.name} name={b.name} type={b.type} count={b.count} minutes={b.minutes} maxValue={maxValue} mode={mode} />
         ))}
       </div>
     </div>

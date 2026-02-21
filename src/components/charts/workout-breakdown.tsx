@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { WORKOUT_TYPE_COLORS, WORKOUT_TYPE_LABELS } from '@/lib/constants';
+import { getWorkoutColor } from '@/lib/constants';
 import type { Workout } from '@/lib/types';
 import type { WorkoutType } from '@/lib/constants';
 
@@ -12,19 +12,19 @@ interface WorkoutBreakdownProps {
 
 export function WorkoutBreakdown({ workouts, label }: WorkoutBreakdownProps) {
   const breakdown = useMemo(() => {
-    const totals: Record<string, { count: number; minutes: number }> = {};
+    const totals: Record<string, { count: number; minutes: number; type: WorkoutType }> = {};
     let totalMinutes = 0;
 
     for (const w of workouts) {
-      if (!totals[w.type]) totals[w.type] = { count: 0, minutes: 0 };
-      totals[w.type].count++;
-      totals[w.type].minutes += w.duration_minutes;
+      if (!totals[w.name]) totals[w.name] = { count: 0, minutes: 0, type: w.type as WorkoutType };
+      totals[w.name].count++;
+      totals[w.name].minutes += w.duration_minutes;
       totalMinutes += w.duration_minutes;
     }
 
     return Object.entries(totals)
-      .map(([type, data]) => ({
-        type: type as WorkoutType,
+      .map(([name, data]) => ({
+        name,
         ...data,
         pct: totalMinutes > 0 ? Math.round((data.minutes / totalMinutes) * 100) : 0,
       }))
@@ -47,13 +47,13 @@ export function WorkoutBreakdown({ workouts, label }: WorkoutBreakdownProps) {
       <div className="flex h-4 rounded-full overflow-hidden">
         {breakdown.map((b) => (
           <div
-            key={b.type}
+            key={b.name}
             style={{
               width: `${b.pct}%`,
-              backgroundColor: WORKOUT_TYPE_COLORS[b.type],
+              backgroundColor: getWorkoutColor(b.name, b.type),
             }}
             className="transition-all duration-500"
-            title={`${WORKOUT_TYPE_LABELS[b.type]}: ${b.pct}%`}
+            title={`${b.name}: ${b.pct}%`}
           />
         ))}
       </div>
@@ -68,12 +68,12 @@ export function WorkoutBreakdown({ workouts, label }: WorkoutBreakdownProps) {
         <span>{workouts.length} sessions</span>
       </div>
 
-      {/* Type rows */}
+      {/* Activity rows */}
       <div className="space-y-2">
         {breakdown.map((b) => (
-          <div key={b.type} className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: WORKOUT_TYPE_COLORS[b.type] }} />
-            <span className="text-sm text-gray-300 flex-1">{WORKOUT_TYPE_LABELS[b.type]}</span>
+          <div key={b.name} className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: getWorkoutColor(b.name, b.type) }} />
+            <span className="text-sm text-gray-300 flex-1">{b.name}</span>
             <span className="text-sm font-medium text-gray-200 tabular-nums">{b.pct}%</span>
             <span className="text-xs text-gray-500 tabular-nums w-16 text-right">
               {b.count} × {Math.round(b.minutes / b.count)}m

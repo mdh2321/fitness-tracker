@@ -47,6 +47,27 @@ export const WORKOUT_TYPE_COLORS: Record<WorkoutType, string> = {
   sport: '#ff3b5c',
 };
 
+// Per-activity colors — best colors reserved for most common activities
+export const WORKOUT_NAME_COLORS: Record<string, string> = {
+  'Strength Training': '#8b5cf6', // purple
+  'Running':           '#00d26a', // vibrant green
+  'HIIT':              '#ff3b5c', // hot red
+  'Walking':           '#00bcd4', // teal
+  'Cycling':           '#3b82f6', // blue
+  'Swimming':          '#0ea5e9', // sky blue
+  'Hiking':            '#22c55e', // earthy green
+  'Rowing':            '#14b8a6', // teal-green
+  'Boxing':            '#f97316', // orange
+  'Yoga':              '#a78bfa', // lavender
+  'Pilates':           '#f472b6', // pink
+  'Sport':             '#fb923c', // light orange
+  'Other':             '#6b7280', // gray
+};
+
+export function getWorkoutColor(name: string, type?: WorkoutType): string {
+  return WORKOUT_NAME_COLORS[name] ?? (type ? WORKOUT_TYPE_COLORS[type] : '#6b7280');
+}
+
 export const STRAIN_COLORS = {
   low: '#ff3b5c',      // 0-5  red (low activity)
   moderate: '#ff6b35',  // 5-10 orange

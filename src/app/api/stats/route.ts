@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
   const cardioMinutes = weekWorkouts
     .filter((w) => CARDIO_ACTIVITIES.has(w.name))
     .reduce((sum, w) => sum + w.duration_minutes, 0);
-  const strengthSessions = weekWorkouts.filter((w) => w.type === 'strength' || w.type === 'mixed').length;
+  const strengthSessions = weekWorkouts.filter((w) => w.type === 'strength').length;
   const uniqueWorkoutDays = new Set(weekWorkouts.map((w) => format(parseISO(w.started_at), 'yyyy-MM-dd'))).size;
 
   // Weekly steps from daily_strain

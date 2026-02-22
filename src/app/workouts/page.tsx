@@ -24,16 +24,15 @@ export default function WorkoutsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-100">Workouts</h1>
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--fg)' }}>Workouts</h1>
         <div className="flex items-center gap-2">
           {passiveList.length > 0 && (
             <button
               onClick={() => setShowWalking((v) => !v)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                showWalking
-                  ? 'bg-[#00bcd4]/10 border-[#00bcd4]/30 text-[#00bcd4]'
-                  : 'bg-[#0a0a0f] border-[#2a2a35] text-gray-500 hover:text-gray-400'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors`}
+              style={showWalking
+                ? { background: 'rgba(0,188,212,0.1)', borderColor: 'rgba(0,188,212,0.3)', color: '#00bcd4' }
+                : { background: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--fg-muted)' }}
             >
               <Footprints className="h-3.5 w-3.5" />
               Walking
@@ -50,7 +49,7 @@ export default function WorkoutsPage() {
       {isLoading && (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 rounded-xl bg-[#141419] border border-[#2a2a35] animate-pulse" />
+            <div key={i} className="h-24 rounded-xl border animate-pulse" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }} />
           ))}
         </div>
       )}
@@ -58,8 +57,8 @@ export default function WorkoutsPage() {
       {workouts && workouts.length === 0 && (
         <div className="text-center py-16">
           <Dumbbell className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-gray-300">No workouts yet</h2>
-          <p className="text-gray-500 mt-1">Log your first workout to get started.</p>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--fg-secondary)' }}>No workouts yet</h2>
+          <p className="mt-1" style={{ color: 'var(--fg-muted)' }}>Log your first workout to get started.</p>
           <Link href="/workouts/new" className="mt-4 inline-block">
             <Button>
               <Plus className="mr-1 h-4 w-4" /> New Workout
@@ -79,7 +78,7 @@ export default function WorkoutsPage() {
               <div className="flex items-center gap-2 pt-2">
                 <Footprints className="h-4 w-4 text-gray-600" />
                 <span className="text-sm text-gray-600">Active Time</span>
-                <div className="flex-1 h-px bg-[#2a2a35]" />
+                <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
               </div>
               {passiveList.map((workout: Workout) => (
                 <WorkoutCard key={workout.id} workout={workout} isPassive />

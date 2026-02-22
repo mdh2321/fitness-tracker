@@ -6,6 +6,7 @@ import type { Workout } from '@/lib/types';
 import type { WorkoutType } from '@/lib/constants';
 import { format, parseISO, startOfWeek } from 'date-fns';
 import { useMemo } from 'react';
+import { useTheme } from '@/components/providers/theme-provider';
 
 interface WeeklyTypeBarProps {
   workouts: Workout[];
@@ -13,6 +14,14 @@ interface WeeklyTypeBarProps {
 }
 
 export function WeeklyTypeBar({ workouts, weeks = 8 }: WeeklyTypeBarProps) {
+  const { theme } = useTheme();
+  const ct = {
+    tick: theme === 'light' ? '#71717a' : '#6b7280',
+    tooltipBg: theme === 'light' ? '#ffffff' : '#141419',
+    tooltipBorder: theme === 'light' ? '#cccbda' : '#2a2a35',
+    tooltipColor: theme === 'light' ? '#18181b' : '#e5e5e5',
+  };
+
   const chartData = useMemo(() => {
     const byWeek: Record<string, Record<string, number>> = {};
 
@@ -35,7 +44,7 @@ export function WeeklyTypeBar({ workouts, weeks = 8 }: WeeklyTypeBarProps) {
   }, [workouts, weeks]);
 
   if (chartData.length === 0) {
-    return <div className="text-center text-gray-500 text-sm py-8">No data yet</div>;
+    return <div className="text-center text-sm py-8" style={{ color: 'var(--fg-muted)' }}>No data yet</div>;
   }
 
   return (
@@ -45,20 +54,20 @@ export function WeeklyTypeBar({ workouts, weeks = 8 }: WeeklyTypeBarProps) {
           dataKey="week"
           axisLine={false}
           tickLine={false}
-          tick={{ fill: '#6b7280', fontSize: 11 }}
+          tick={{ fill: ct.tick, fontSize: 11 }}
         />
         <YAxis
           axisLine={false}
           tickLine={false}
-          tick={{ fill: '#6b7280', fontSize: 11 }}
+          tick={{ fill: ct.tick, fontSize: 11 }}
           tickFormatter={(v) => `${v}m`}
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: '#141419',
-            border: '1px solid #2a2a35',
+            backgroundColor: ct.tooltipBg,
+            border: `1px solid ${ct.tooltipBorder}`,
             borderRadius: '8px',
-            color: '#e5e5e5',
+            color: ct.tooltipColor,
             fontSize: '12px',
           }}
           formatter={(value: unknown, name: unknown) => [
@@ -68,7 +77,7 @@ export function WeeklyTypeBar({ workouts, weeks = 8 }: WeeklyTypeBarProps) {
         />
         <Legend
           formatter={(value: string) => WORKOUT_TYPE_LABELS[value as WorkoutType] || value}
-          wrapperStyle={{ fontSize: '11px', color: '#9ca3af' }}
+          wrapperStyle={{ fontSize: '11px', color: ct.tick }}
         />
         <Bar dataKey="strength" stackId="a" fill={WORKOUT_TYPE_COLORS.strength} radius={0} />
         <Bar dataKey="cardio" stackId="a" fill={WORKOUT_TYPE_COLORS.cardio} radius={0} />

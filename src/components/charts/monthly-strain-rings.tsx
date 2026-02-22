@@ -16,11 +16,11 @@ function MiniRing({ value, max = 21, size = 32 }: { value: number; max?: number;
   const circumference = 2 * Math.PI * radius;
   const pct = Math.min(value / max, 1);
   const offset = circumference * (1 - pct);
-  const color = value > 0 ? getStrainColor(value) : '#1a1a24';
+  const color = value > 0 ? getStrainColor(value) : 'var(--bg-elevated)';
 
   return (
     <svg width={size} height={size} className="-rotate-90">
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#1a1a24" strokeWidth={strokeWidth} />
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--bg-elevated)" strokeWidth={strokeWidth} />
       {value > 0 && (
         <circle
           cx={size / 2}
@@ -76,18 +76,20 @@ export function MonthlyStrainRings({ strainByDate }: MonthlyStrainRingsProps) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-              className="p-1 rounded-md hover:bg-[#1a1a24] text-gray-400 hover:text-gray-200 transition-colors"
+              className="p-1 rounded-md hover:bg-[var(--bg-elevated)] transition-colors"
+              style={{ color: 'var(--fg-muted)' }}
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="text-sm text-gray-300 min-w-[100px] text-center">
+            <span className="text-sm min-w-[100px] text-center" style={{ color: 'var(--fg-secondary)' }}>
               {format(currentMonth, 'MMMM yyyy')}
             </span>
             <button
               onClick={() => canGoForward && setCurrentMonth(addMonths(currentMonth, 1))}
               className={`p-1 rounded-md transition-colors ${
-                canGoForward ? 'hover:bg-[#1a1a24] text-gray-400 hover:text-gray-200' : 'text-gray-700 cursor-not-allowed'
+                canGoForward ? 'hover:bg-[var(--bg-elevated)]' : 'opacity-25 cursor-not-allowed'
               }`}
+              style={{ color: 'var(--fg-muted)' }}
               disabled={!canGoForward}
             >
               <ChevronRight className="h-4 w-4" />
@@ -105,19 +107,20 @@ export function MonthlyStrainRings({ strainByDate }: MonthlyStrainRingsProps) {
               onMouseLeave={() => setHoveredDay(null)}
             >
               <MiniRing value={day.strain} />
-              <span className="text-[10px] text-gray-500 tabular-nums">{day.day}</span>
+              <span className="text-[10px] tabular-nums" style={{ color: 'var(--fg-muted)' }}>{day.day}</span>
             </div>
           ))}
         </div>
 
         <div
-          className={`mt-3 px-3 py-2 rounded-lg bg-[#0a0a0f] text-xs text-gray-400 transition-opacity duration-200 ${
+          className={`mt-3 px-3 py-2 rounded-lg text-xs transition-opacity duration-200 ${
             hoveredData ? 'opacity-100' : 'opacity-0'
           }`}
+          style={{ background: 'var(--bg)', color: 'var(--fg-secondary)' }}
         >
           {hoveredData ? (
             <>
-              <span className="font-medium text-gray-200">{format(parseISO(hoveredData.date), 'MMM d')}</span>
+              <span className="font-medium" style={{ color: 'var(--fg)' }}>{format(parseISO(hoveredData.date), 'MMM d')}</span>
               {' — '}
               <span style={{ color: getStrainColor(hoveredData.strain) }}>
                 {hoveredData.strain.toFixed(1)} strain

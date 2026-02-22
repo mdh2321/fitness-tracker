@@ -64,7 +64,7 @@ export function HeatmapCalendar({ data, weeks = 52 }: HeatmapCalendarProps) {
       <div className="overflow-x-auto">
         <svg width={width} height={height + 20} className="min-w-full">
           {monthLabels.map((label, i) => (
-            <text key={i} x={label.x} y={height + 14} className="text-[10px] fill-gray-500">
+            <text key={i} x={label.x} y={height + 14} className="text-[10px]" style={{ fill: 'var(--fg-muted)' }}>
               {label.text}
             </text>
           ))}
@@ -93,7 +93,7 @@ export function HeatmapCalendar({ data, weeks = 52 }: HeatmapCalendarProps) {
       </div>
 
       {/* Color legend */}
-      <div className="flex items-center gap-3 text-[10px] text-gray-500">
+      <div className="flex items-center gap-3 text-[10px]" style={{ color: 'var(--fg-muted)' }}>
         <span>Less</span>
         {HEATMAP_SCALE.map((s) => (
           <div key={s.label} className="flex items-center gap-1">
@@ -106,13 +106,14 @@ export function HeatmapCalendar({ data, weeks = 52 }: HeatmapCalendarProps) {
 
       {/* Hover info bar — always rendered to prevent layout shift */}
       <div
-        className={`px-3 py-2 rounded-lg bg-[#0a0a0f] text-xs text-gray-400 transition-opacity duration-200 ${
+        className={`px-3 py-2 rounded-lg text-xs transition-opacity duration-200 ${
           hovered ? 'opacity-100' : 'opacity-0'
         }`}
+        style={{ background: 'var(--bg)', color: 'var(--fg-secondary)' }}
       >
         {hovered ? (
           <>
-            <span className="font-medium text-gray-200">
+            <span className="font-medium" style={{ color: 'var(--fg)' }}>
               {format(parseISO(hovered.date), 'MMM d, yyyy')}
             </span>
             {' — '}

@@ -31,11 +31,11 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
   };
 
   if (isLoading) {
-    return <div className="max-w-2xl mx-auto"><div className="h-48 rounded-xl bg-[#141419] border border-[#2a2a35] animate-pulse" /></div>;
+    return <div className="max-w-2xl mx-auto"><div className="h-48 rounded-xl border animate-pulse" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }} /></div>;
   }
 
   if (!workout) {
-    return <div className="text-center py-16 text-gray-400">Workout not found</div>;
+    return <div className="text-center py-16" style={{ color: 'var(--fg-secondary)' }}>Workout not found</div>;
   }
 
   return (
@@ -54,7 +54,7 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-xl">{workout.name}</CardTitle>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm mt-1" style={{ color: 'var(--fg-secondary)' }}>
                 {format(parseISO(workout.started_at), 'EEEE, MMM d, yyyy · h:mm a')}
               </p>
             </div>
@@ -72,71 +72,71 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-3 rounded-lg bg-[#0a0a0f]">
+            <div className="text-center p-3 rounded-lg" style={{ background: 'var(--bg)' }}>
               <div className="text-2xl font-bold tabular-nums" style={{ color: getStrainColor(workout.strain_score) }}>
                 {workout.strain_score.toFixed(1)}
               </div>
-              <div className="text-xs text-gray-500 mt-1">Strain ({getStrainLabel(workout.strain_score)})</div>
+              <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Strain ({getStrainLabel(workout.strain_score)})</div>
             </div>
-            <div className="text-center p-3 rounded-lg bg-[#0a0a0f]">
-              <div className="flex items-center justify-center gap-1 text-2xl font-bold text-gray-100 tabular-nums">
-                <Clock className="h-5 w-5 text-gray-400" />
+            <div className="text-center p-3 rounded-lg" style={{ background: 'var(--bg)' }}>
+              <div className="flex items-center justify-center gap-1 text-2xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>
+                <Clock className="h-5 w-5" style={{ color: 'var(--fg-secondary)' }} />
                 {workout.duration_minutes}
               </div>
-              <div className="text-xs text-gray-500 mt-1">Minutes</div>
+              <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Minutes</div>
             </div>
             {workout.source === 'manual' && (
-              <div className="text-center p-3 rounded-lg bg-[#0a0a0f]">
-                <div className="flex items-center justify-center gap-1 text-2xl font-bold text-gray-100 tabular-nums">
-                  <Activity className="h-5 w-5 text-gray-400" />
+              <div className="text-center p-3 rounded-lg" style={{ background: 'var(--bg)' }}>
+                <div className="flex items-center justify-center gap-1 text-2xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>
+                  <Activity className="h-5 w-5" style={{ color: 'var(--fg-secondary)' }} />
                   {workout.perceived_effort}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">RPE</div>
+                <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>RPE</div>
               </div>
             )}
             {workout.source === 'apple_health' && workout.avg_heart_rate && (
-              <div className="text-center p-3 rounded-lg bg-[#0a0a0f]">
-                <div className="flex items-center justify-center gap-1 text-2xl font-bold text-gray-100 tabular-nums">
+              <div className="text-center p-3 rounded-lg" style={{ background: 'var(--bg)' }}>
+                <div className="flex items-center justify-center gap-1 text-2xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>
                   <Heart className="h-5 w-5 text-[#ff3b5c]" />
                   {workout.avg_heart_rate}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">Avg HR (bpm)</div>
+                <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Avg HR (bpm)</div>
               </div>
             )}
             {workout.source === 'apple_health' && workout.max_heart_rate && (
-              <div className="text-center p-3 rounded-lg bg-[#0a0a0f]">
-                <div className="flex items-center justify-center gap-1 text-2xl font-bold text-gray-100 tabular-nums">
+              <div className="text-center p-3 rounded-lg" style={{ background: 'var(--bg)' }}>
+                <div className="flex items-center justify-center gap-1 text-2xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>
                   <Heart className="h-5 w-5 text-[#ff3b5c]" />
                   {workout.max_heart_rate}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">Max HR (bpm)</div>
+                <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Max HR (bpm)</div>
               </div>
             )}
             {workout.calories && (
-              <div className="text-center p-3 rounded-lg bg-[#0a0a0f]">
-                <div className="flex items-center justify-center gap-1 text-2xl font-bold text-gray-100 tabular-nums">
+              <div className="text-center p-3 rounded-lg" style={{ background: 'var(--bg)' }}>
+                <div className="flex items-center justify-center gap-1 text-2xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>
                   <Flame className="h-5 w-5 text-[#ff6b35]" />
                   {workout.calories}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">Calories</div>
+                <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Calories</div>
               </div>
             )}
           </div>
 
           {workout.exercises && workout.exercises.length > 0 && (
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Exercises</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--fg-secondary)' }}>Exercises</h3>
               {workout.exercises.map((ex) => (
-                <div key={ex.id} className="border border-[#2a2a35] rounded-lg p-3">
+                <div key={ex.id} className="border rounded-lg p-3" style={{ borderColor: 'var(--border)' }}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-200">{ex.name}</span>
-                    <span className="text-xs text-gray-500">{ex.muscle_group.replace('_', ' ')}</span>
+                    <span className="font-medium" style={{ color: 'var(--fg)' }}>{ex.name}</span>
+                    <span className="text-xs" style={{ color: 'var(--fg-muted)' }}>{ex.muscle_group.replace('_', ' ')}</span>
                   </div>
                   {ex.sets && ex.sets.length > 0 && (
                     <div className="space-y-1">
                       {ex.sets.map((set) => (
-                        <div key={set.id} className="flex items-center gap-3 text-sm text-gray-400">
-                          <span className="w-6 text-gray-600">{set.set_number}</span>
+                        <div key={set.id} className="flex items-center gap-3 text-sm" style={{ color: 'var(--fg-secondary)' }}>
+                          <span className="w-6" style={{ color: 'var(--fg-muted)' }}>{set.set_number}</span>
                           {set.reps && <span>{set.reps} reps</span>}
                           {set.weight_kg && <span>@ {set.weight_kg} kg</span>}
                           {set.distance_km && <span>{set.distance_km} km</span>}
@@ -153,8 +153,8 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
           )}
 
           {workout.notes && (
-            <div className="mt-6 p-3 rounded-lg bg-[#0a0a0f]">
-              <p className="text-sm text-gray-400">{workout.notes}</p>
+            <div className="mt-6 p-3 rounded-lg" style={{ background: 'var(--bg)' }}>
+              <p className="text-sm" style={{ color: 'var(--fg-secondary)' }}>{workout.notes}</p>
             </div>
           )}
         </CardContent>

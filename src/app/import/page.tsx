@@ -99,24 +99,24 @@ export default function ImportPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-100">Import from Apple Health</h1>
+      <h1 className="text-2xl font-bold" style={{ color: 'var(--fg)' }}>Import from Apple Health</h1>
 
       {/* Upload area */}
       {workouts.length === 0 && !result && (
         <Card>
           <CardContent className="py-12">
             <label className="flex flex-col items-center justify-center cursor-pointer group">
-              <div className="w-16 h-16 rounded-full bg-[#1a1a24] flex items-center justify-center mb-4 group-hover:bg-[#222230] transition-colors">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors" style={{ background: 'var(--bg-elevated)' }}>
                 {parsing ? (
                   <Loader2 className="h-8 w-8 text-[#00d26a] animate-spin" />
                 ) : (
                   <Upload className="h-8 w-8 text-[#00d26a]" />
                 )}
               </div>
-              <p className="text-gray-200 font-medium mb-1">
+              <p className="font-medium mb-1" style={{ color: 'var(--fg)' }}>
                 {parsing ? 'Parsing...' : 'Upload Apple Health Export'}
               </p>
-              <p className="text-sm text-gray-500">Drop export.xml or export.zip here</p>
+              <p className="text-sm" style={{ color: 'var(--fg-muted)' }}>Drop export.xml or export.zip here</p>
               <input
                 type="file"
                 accept=".xml,.zip"
@@ -160,19 +160,19 @@ export default function ImportPage() {
               {workouts.map((w, i) => (
                 <div
                   key={i}
-                  className={`flex items-center gap-3 p-2 rounded-lg hover:bg-[#1a1a24] transition-colors ${
+                  className={`flex items-center gap-3 p-2 rounded-lg transition-colors hover:bg-[var(--bg-elevated)] ${
                     !w.selected ? 'opacity-50' : ''
                   }`}
                 >
                   <Checkbox checked={w.selected} onCheckedChange={() => toggleWorkout(i)} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-200 truncate">{w.name}</span>
+                      <span className="text-sm font-medium truncate" style={{ color: 'var(--fg)' }}>{w.name}</span>
                       <Badge variant={w.type as WorkoutType} className="text-[10px]">
                         {WORKOUT_TYPE_LABELS[w.type]}
                       </Badge>
                     </div>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs" style={{ color: 'var(--fg-muted)' }}>
                       {format(new Date(w.startDate), 'MMM d, yyyy h:mm a')} - {w.duration}min
                       {w.calories && ` - ${w.calories} kcal`}
                     </span>
@@ -188,11 +188,11 @@ export default function ImportPage() {
       {result && (
         <Card>
           <CardContent className="py-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-[#00d26a]/10 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-full bg-[#00d26a]/10 flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(0,210,106,0.1)' }}>
               <Check className="h-8 w-8 text-[#00d26a]" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-100 mb-2">Import Complete</h2>
-            <p className="text-gray-400">
+            <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--fg)' }}>Import Complete</h2>
+            <p style={{ color: 'var(--fg-secondary)' }}>
               {result.imported} workouts imported, {result.skipped} skipped (duplicates or deselected)
             </p>
             <Button className="mt-6" onClick={() => { setWorkouts([]); setResult(null); }}>

@@ -67,6 +67,7 @@ export interface UserSettings {
   weekly_cardio_minutes_target: number;
   weekly_strength_sessions_target: number;
   weekly_steps_target: number;
+  theme: 'light' | 'dark';
 }
 
 export interface WorkoutWithExercises extends Workout {

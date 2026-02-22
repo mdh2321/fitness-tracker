@@ -23,6 +23,7 @@ export async function PUT(request: NextRequest) {
     weekly_cardio_minutes_target,
     weekly_strength_sessions_target,
     weekly_steps_target,
+    theme,
   } = body;
 
   let settings = await db.select().from(userSettings).get();
@@ -42,6 +43,7 @@ export async function PUT(request: NextRequest) {
       weekly_cardio_minutes_target: weekly_cardio_minutes_target ?? settings.weekly_cardio_minutes_target,
       weekly_strength_sessions_target: weekly_strength_sessions_target ?? settings.weekly_strength_sessions_target,
       weekly_steps_target: weekly_steps_target ?? settings.weekly_steps_target,
+      theme: theme ?? settings.theme,
     })
     .where(eq(userSettings.id, settings.id))
     .returning();

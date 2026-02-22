@@ -2,10 +2,11 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+  ({ className, style, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('rounded-xl border border-[#2a2a35] bg-[#141419] p-6', className)}
+      className={cn('rounded-xl border p-6', className)}
+      style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', ...style }}
       {...props}
     />
   )
@@ -20,15 +21,15 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 CardHeader.displayName = 'CardHeader';
 
 const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
-  ({ className, ...props }, ref) => (
-    <h3 ref={ref} className={cn('text-lg font-semibold text-gray-100', className)} {...props} />
+  ({ className, style, ...props }, ref) => (
+    <h3 ref={ref} className={cn('text-lg font-semibold', className)} style={{ color: 'var(--fg)', ...style }} {...props} />
   )
 );
 CardTitle.displayName = 'CardTitle';
 
 const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
-  ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn('text-sm text-gray-400', className)} {...props} />
+  ({ className, style, ...props }, ref) => (
+    <p ref={ref} className={cn('text-sm', className)} style={{ color: 'var(--fg-muted)', ...style }} {...props} />
   )
 );
 CardDescription.displayName = 'CardDescription';

@@ -1,7 +1,8 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Activity } from 'lucide-react';
+import { Activity, Sun, Moon } from 'lucide-react';
+import { useTheme } from '@/components/providers/theme-provider';
 
 const pageTitles: Record<string, string> = {
   '/': 'Dashboard',
@@ -16,17 +17,25 @@ const pageTitles: Record<string, string> = {
 export function Header() {
   const pathname = usePathname();
   const title = pageTitles[pathname] || (pathname.startsWith('/workouts/') ? 'Workout' : 'FitTrack');
+  const { theme, setTheme } = useTheme();
 
   return (
-    <header className="sticky top-0 z-40 bg-[#0a0a0f]/80 backdrop-blur-md border-b border-[#2a2a35]">
+    <header className="sticky top-0 z-40 backdrop-blur-md border-b" style={{ background: 'color-mix(in srgb, var(--bg) 80%, transparent)', borderColor: 'var(--border)' }}>
       <div className="flex items-center justify-between h-14 px-4 lg:px-6">
         <div className="flex items-center gap-2 lg:hidden">
           <Activity className="h-5 w-5 text-[#00d26a]" />
-          <span className="font-bold text-gray-100">FitTrack</span>
+          <span className="font-bold" style={{ color: 'var(--fg)' }}>FitTrack</span>
         </div>
-        <h1 className="hidden lg:block text-lg font-semibold text-gray-100">{title}</h1>
+        <h1 className="hidden lg:block text-lg font-semibold" style={{ color: 'var(--fg)' }}>{title}</h1>
         <div className="flex items-center gap-2">
-          {/* Future: notifications, quick add */}
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-elevated)]"
+            style={{ color: 'var(--fg-muted)' }}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
         </div>
       </div>
     </header>

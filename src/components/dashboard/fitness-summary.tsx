@@ -24,14 +24,14 @@ function NameRow({ name, type, count, minutes, maxValue, mode }: { name: string;
   return (
     <div className="flex items-center gap-3 py-1.5">
       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-      <span className="text-sm text-gray-300 w-28 flex-shrink-0 truncate">{name}</span>
-      <div className="flex-1 h-2 rounded-full bg-[#1a1a24] overflow-hidden">
+      <span className="text-sm w-28 flex-shrink-0 truncate" style={{ color: 'var(--fg-secondary)' }}>{name}</span>
+      <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
-      <span className="text-sm font-medium text-gray-200 tabular-nums w-20 text-right flex-shrink-0">
+      <span className="text-sm font-medium tabular-nums w-20 text-right flex-shrink-0" style={{ color: 'var(--fg)' }}>
         {mode === 'time' ? (
           hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
         ) : (
@@ -63,7 +63,7 @@ function BreakdownView({ workouts, mode }: { workouts: Workout[]; mode: ViewMode
   const remainingMins = totalMinutes % 60;
 
   if (workouts.length === 0) {
-    return <div className="text-center text-gray-500 text-sm py-4">No workouts this period</div>;
+    return <div className="text-center text-sm py-4" style={{ color: 'var(--fg-muted)' }}>No workouts this period</div>;
   }
 
   return (
@@ -86,14 +86,14 @@ function BreakdownView({ workouts, mode }: { workouts: Workout[]; mode: ViewMode
       <div className="text-sm text-gray-400">
         {mode === 'time' ? (
           <>
-            {totalHours > 0 && <><span className="text-lg font-bold text-gray-100">{totalHours}</span><span className="text-gray-500">h </span></>}
-            <span className="text-lg font-bold text-gray-100">{remainingMins}</span>
-            <span className="text-gray-500">m total</span>
+            {totalHours > 0 && <><span className="text-lg font-bold" style={{ color: 'var(--fg)' }}>{totalHours}</span><span style={{ color: 'var(--fg-muted)' }}>h </span></>}
+            <span className="text-lg font-bold" style={{ color: 'var(--fg)' }}>{remainingMins}</span>
+            <span style={{ color: 'var(--fg-muted)' }}>m total</span>
           </>
         ) : (
           <>
-            <span className="text-lg font-bold text-gray-100">{workouts.length}</span>
-            <span className="text-gray-500"> sessions total</span>
+            <span className="text-lg font-bold" style={{ color: 'var(--fg)' }}>{workouts.length}</span>
+            <span style={{ color: 'var(--fg-muted)' }}> sessions total</span>
           </>
         )}
       </div>
@@ -133,20 +133,18 @@ export function FitnessSummary({ workouts }: FitnessSummaryProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Workouts</CardTitle>
-          <div className="flex items-center gap-1 bg-[#0a0a0f] rounded-lg p-0.5">
+          <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ background: 'var(--bg)' }}>
             <button
               onClick={() => setMode('time')}
-              className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                mode === 'time' ? 'bg-[#2a2a35] text-gray-200' : 'text-gray-500 hover:text-gray-400'
-              }`}
+              className={`px-2.5 py-1 text-xs rounded-md transition-colors`}
+              style={mode === 'time' ? { background: 'var(--bg-elevated)', color: 'var(--fg)' } : { color: 'var(--fg-muted)' }}
             >
               Time
             </button>
             <button
               onClick={() => setMode('count')}
-              className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                mode === 'count' ? 'bg-[#2a2a35] text-gray-200' : 'text-gray-500 hover:text-gray-400'
-              }`}
+              className={`px-2.5 py-1 text-xs rounded-md transition-colors`}
+              style={mode === 'count' ? { background: 'var(--bg-elevated)', color: 'var(--fg)' } : { color: 'var(--fg-muted)' }}
             >
               Count
             </button>

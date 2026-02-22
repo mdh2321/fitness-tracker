@@ -155,11 +155,10 @@ export function WorkoutForm() {
                   key={option.label}
                   type="button"
                   onClick={() => selectActivity(option.label, option.type)}
-                  className={`p-3 rounded-lg border text-sm font-medium transition-all ${
-                    selectedActivity === option.label
-                      ? 'border-[#00d26a] bg-[#00d26a]/10 text-[#00d26a]'
-                      : 'border-[#2a2a35] text-gray-400 hover:border-gray-500'
-                  }`}
+                  className={`p-3 rounded-lg border text-sm font-medium transition-all`}
+                  style={selectedActivity === option.label
+                    ? { borderColor: '#00d26a', background: 'rgba(0,210,106,0.1)', color: '#00d26a' }
+                    : { borderColor: 'var(--border)', color: 'var(--fg-muted)' }}
                 >
                   {option.label}
                 </button>
@@ -215,18 +214,18 @@ export function WorkoutForm() {
           </CardHeader>
           <CardContent className="space-y-4">
             {exerciseFields.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8" style={{ color: 'var(--fg-muted)' }}>
                 <p>No exercises added yet.</p>
                 <p className="text-sm mt-1">Add exercises or skip this step for cardio-only workouts.</p>
               </div>
             )}
 
             {exerciseFields.map((field, exIdx) => (
-              <div key={field.id} className="border border-[#2a2a35] rounded-lg p-4 space-y-3">
+              <div key={field.id} className="border rounded-lg p-4 space-y-3" style={{ borderColor: 'var(--border)' }}>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-300">Exercise {exIdx + 1}</span>
+                  <span className="text-sm font-medium" style={{ color: 'var(--fg-secondary)' }}>Exercise {exIdx + 1}</span>
                   <Button type="button" variant="ghost" size="icon" onClick={() => removeExercise(exIdx)}>
-                    <Trash2 className="h-4 w-4 text-gray-500" />
+                    <Trash2 className="h-4 w-4" style={{ color: 'var(--fg-muted)' }} />
                   </Button>
                 </div>
 
@@ -268,7 +267,7 @@ export function WorkoutForm() {
                 {/* Sets */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400 uppercase tracking-wider">Sets</span>
+                    <span className="text-xs uppercase tracking-wider" style={{ color: 'var(--fg-secondary)' }}>Sets</span>
                     <Button type="button" variant="ghost" size="sm" onClick={() => addSet(exIdx)}>
                       <Plus className="h-3 w-3 mr-1" /> Set
                     </Button>
@@ -276,7 +275,7 @@ export function WorkoutForm() {
 
                   {(exerciseList[exIdx]?.sets || []).map((set, setIdx) => (
                     <div key={setIdx} className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 w-6">{setIdx + 1}</span>
+                      <span className="text-xs w-6" style={{ color: 'var(--fg-muted)' }}>{setIdx + 1}</span>
                       {isStrengthLike && (
                         <>
                           <Input
@@ -327,7 +326,7 @@ export function WorkoutForm() {
                           />
                         </>
                       )}
-                      <label className="flex items-center gap-1 text-xs text-gray-500">
+                      <label className="flex items-center gap-1 text-xs" style={{ color: 'var(--fg-muted)' }}>
                         <input
                           type="checkbox"
                           {...register(`exerciseList.${exIdx}.sets.${setIdx}.is_warmup`)}
@@ -345,7 +344,7 @@ export function WorkoutForm() {
                       </label>
                       {(exerciseList[exIdx]?.sets || []).length > 1 && (
                         <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeSet(exIdx, setIdx)}>
-                          <Trash2 className="h-3 w-3 text-gray-600" />
+                          <Trash2 className="h-3 w-3" style={{ color: 'var(--fg-muted)' }} />
                         </Button>
                       )}
                     </div>
@@ -382,11 +381,11 @@ export function WorkoutForm() {
                   {...register('perceived_effort', { valueAsNumber: true })}
                   className="flex-1 accent-[#00d26a]"
                 />
-                <span className="text-2xl font-bold tabular-nums text-gray-100 w-8 text-center">
+                <span className="text-2xl font-bold tabular-nums w-8 text-center" style={{ color: 'var(--fg)' }}>
                   {watch('perceived_effort')}
                 </span>
               </div>
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>
                 <span>Easy</span>
                 <span>Moderate</span>
                 <span>Maximum</span>
@@ -413,7 +412,8 @@ export function WorkoutForm() {
               <Label>Notes</Label>
               <textarea
                 {...register('notes')}
-                className="flex min-h-[80px] w-full rounded-lg border border-[#2a2a35] bg-[#0a0a0f] px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d26a]"
+                className="flex min-h-[80px] w-full rounded-lg border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d26a]"
+                style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--fg)' }}
                 placeholder="How did it feel?"
               />
             </div>
@@ -437,9 +437,8 @@ export function WorkoutForm() {
             key={s}
             type="button"
             onClick={() => setStep(s)}
-            className={`w-2.5 h-2.5 rounded-full transition-colors ${
-              s === step ? 'bg-[#00d26a]' : 'bg-[#2a2a35]'
-            }`}
+            className={`w-2.5 h-2.5 rounded-full transition-colors`}
+            style={{ background: s === step ? '#00d26a' : 'var(--border)' }}
           />
         ))}
       </div>

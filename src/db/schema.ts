@@ -10,6 +10,7 @@ export const userSettings = sqliteTable('user_settings', {
   weekly_cardio_minutes_target: integer('weekly_cardio_minutes_target').notNull().default(150),
   weekly_strength_sessions_target: integer('weekly_strength_sessions_target').notNull().default(3),
   weekly_steps_target: integer('weekly_steps_target').notNull().default(70000),
+  theme: text('theme').notNull().default('dark'),
 });
 
 export const workouts = sqliteTable('workouts', {

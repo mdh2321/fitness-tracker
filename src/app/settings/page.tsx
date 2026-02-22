@@ -3,16 +3,18 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSettings } from '@/hooks/use-settings';
+import { useTheme } from '@/components/providers/theme-provider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { Save, Sun, Moon } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
   const { settings, isLoading, updateSettings } = useSettings();
   const { register, handleSubmit, reset } = useForm();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     if (settings) reset(settings);
@@ -37,12 +39,49 @@ export default function SettingsPage() {
   };
 
   if (isLoading) {
-    return <div className="max-w-xl mx-auto"><div className="h-64 rounded-xl bg-[#141419] border border-[#2a2a35] animate-pulse" /></div>;
+    return (
+      <div className="max-w-xl mx-auto">
+        <div className="h-64 rounded-xl border animate-pulse" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }} />
+      </div>
+    );
   }
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-100">Settings</h1>
+      <h1 className="text-2xl font-bold" style={{ color: 'var(--fg)' }}>Settings</h1>
+
+      {/* Appearance */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>Choose your preferred color theme</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2 rounded-lg p-1 w-fit" style={{ background: 'var(--bg)' }}>
+            <button
+              onClick={() => setTheme('light')}
+              className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              style={theme === 'light'
+                ? { background: 'var(--bg-elevated)', color: 'var(--fg)' }
+                : { color: 'var(--fg-muted)' }}
+            >
+              <Sun className="h-4 w-4" />
+              Light
+            </button>
+            <button
+              onClick={() => setTheme('dark')}
+              className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              style={theme === 'dark'
+                ? { background: 'var(--bg-elevated)', color: 'var(--fg)' }
+                : { color: 'var(--fg-muted)' }}
+            >
+              <Moon className="h-4 w-4" />
+              Dark
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Card>
           <CardHeader>
@@ -64,12 +103,12 @@ export default function SettingsPage() {
               <div>
                 <Label>Max Heart Rate (bpm)</Label>
                 <Input type="number" {...register('max_heart_rate')} />
-                <p className="text-xs text-gray-500 mt-1">Highest HR ever recorded</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Highest HR ever recorded</p>
               </div>
               <div>
                 <Label>Resting Heart Rate (bpm)</Label>
                 <Input type="number" {...register('resting_hr')} />
-                <p className="text-xs text-gray-500 mt-1">Morning resting HR</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Morning resting HR</p>
               </div>
             </div>
           </CardContent>
@@ -96,7 +135,7 @@ export default function SettingsPage() {
             <div>
               <Label>Weekly Steps Target</Label>
               <Input type="number" min={0} step={1000} {...register('weekly_steps_target')} />
-              <p className="text-xs text-gray-500 mt-1">Total steps goal for the week (e.g. 70,000 = 10k/day)</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Total steps goal for the week (e.g. 70,000 = 10k/day)</p>
             </div>
           </CardContent>
         </Card>

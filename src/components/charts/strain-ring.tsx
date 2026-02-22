@@ -35,7 +35,7 @@ export function StrainRing({ value, max = 21, size = 160, strokeWidth = 10, anim
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#1a1a24"
+          stroke="var(--bg-elevated)"
           strokeWidth={strokeWidth}
         />
         {/* Progress ring */}
@@ -58,7 +58,7 @@ export function StrainRing({ value, max = 21, size = 160, strokeWidth = 10, anim
         <span className="text-3xl font-bold tabular-nums" style={{ color }}>
           {value.toFixed(1)}
         </span>
-        <span className="text-xs text-gray-500 uppercase tracking-wider mt-0.5">Strain</span>
+        <span className="text-xs uppercase tracking-wider mt-0.5" style={{ color: 'var(--fg-muted)' }}>Strain</span>
       </div>
     </div>
   );

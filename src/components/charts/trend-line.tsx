@@ -2,6 +2,7 @@
 
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, parseISO } from 'date-fns';
+import { useTheme } from '@/components/providers/theme-provider';
 
 interface TrendLineProps {
   data: { date: string; value: number }[];
@@ -10,6 +11,14 @@ interface TrendLineProps {
 }
 
 export function TrendLine({ data, color = '#00d26a', label = 'Value' }: TrendLineProps) {
+  const { theme } = useTheme();
+  const ct = {
+    tick: theme === 'light' ? '#71717a' : '#6b7280',
+    tooltipBg: theme === 'light' ? '#ffffff' : '#141419',
+    tooltipBorder: theme === 'light' ? '#cccbda' : '#2a2a35',
+    tooltipColor: theme === 'light' ? '#18181b' : '#e5e5e5',
+  };
+
   const chartData = data.map((d) => ({
     ...d,
     label: format(parseISO(d.date), 'MMM d'),
@@ -28,16 +37,16 @@ export function TrendLine({ data, color = '#00d26a', label = 'Value' }: TrendLin
           dataKey="label"
           axisLine={false}
           tickLine={false}
-          tick={{ fill: '#6b7280', fontSize: 11 }}
+          tick={{ fill: ct.tick, fontSize: 11 }}
           interval="preserveStartEnd"
         />
         <YAxis hide />
         <Tooltip
           contentStyle={{
-            backgroundColor: '#141419',
-            border: '1px solid #2a2a35',
+            backgroundColor: ct.tooltipBg,
+            border: `1px solid ${ct.tooltipBorder}`,
             borderRadius: '8px',
-            color: '#e5e5e5',
+            color: ct.tooltipColor,
             fontSize: '12px',
           }}
           formatter={(value: unknown) => [Number(value).toFixed(1), label]}

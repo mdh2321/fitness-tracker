@@ -45,7 +45,7 @@ export default function DashboardPage() {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-48 rounded-xl bg-[#141419] border border-[#2a2a35] animate-pulse" />
+          <div key={i} className="h-48 rounded-xl border animate-pulse" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }} />
         ))}
       </div>
     );
@@ -60,8 +60,8 @@ export default function DashboardPage() {
       <div className="max-w-4xl mx-auto">
         <div className="text-center py-20">
           <Activity className="h-16 w-16 text-[#00d26a] mx-auto mb-6" />
-          <h1 className="text-3xl font-bold text-gray-100 mb-2">Welcome to FitTrack</h1>
-          <p className="text-gray-400 mb-8 max-w-md mx-auto">
+          <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--fg)' }}>Welcome to FitTrack</h1>
+          <p className="mb-8 max-w-md mx-auto" style={{ color: 'var(--fg-secondary)' }}>
             Start tracking your workouts to see your strain scores, streaks, and progress over time.
           </p>
           <div className="flex items-center justify-center gap-3">
@@ -82,7 +82,7 @@ export default function DashboardPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-100">Dashboard</h1>
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--fg)' }}>Dashboard</h1>
         <Link href="/workouts/new">
           <Button>
             <Plus className="mr-1 h-4 w-4" /> Log Workout
@@ -135,28 +135,28 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="text-center">
           <CardContent className="pt-4">
-            <div className="text-3xl font-bold tabular-nums text-gray-100">{stats.totals.workouts}</div>
-            <div className="text-xs text-gray-500 mt-1">Total Workouts</div>
+            <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{stats.totals.workouts}</div>
+            <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Total Workouts</div>
           </CardContent>
         </Card>
         <Card className="text-center">
           <CardContent className="pt-4">
-            <div className="text-3xl font-bold tabular-nums text-gray-100">
-              {Math.floor((stats.totals.duration || 0) / 60)}<span className="text-lg font-normal text-gray-500">h</span>
+            <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>
+              {Math.floor((stats.totals.duration || 0) / 60)}<span className="text-lg font-normal" style={{ color: 'var(--fg-muted)' }}>h</span>
             </div>
-            <div className="text-xs text-gray-500 mt-1">Total Time</div>
+            <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Total Time</div>
           </CardContent>
         </Card>
         <Card className="text-center">
           <CardContent className="pt-4">
-            <div className="text-3xl font-bold tabular-nums text-gray-100">{stats.averages.strain}</div>
-            <div className="text-xs text-gray-500 mt-1">Avg Daily Strain</div>
+            <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{stats.averages.strain}</div>
+            <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Avg Daily Strain</div>
           </CardContent>
         </Card>
         <Card className="text-center">
           <CardContent className="pt-4">
-            <div className="text-3xl font-bold tabular-nums text-gray-100">{stats.streaks.longest}</div>
-            <div className="text-xs text-gray-500 mt-1">Best Streak</div>
+            <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{stats.streaks.longest}</div>
+            <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Best Streak</div>
           </CardContent>
         </Card>
       </div>

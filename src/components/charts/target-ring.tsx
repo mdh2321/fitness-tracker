@@ -25,7 +25,7 @@ export function TargetRing({ value, target, label, color, size = 80, formatValue
     <div className="flex flex-col items-center gap-1">
       <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90">
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#1a1a24" strokeWidth={strokeWidth} />
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--bg-elevated)" strokeWidth={strokeWidth} />
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -41,11 +41,11 @@ export function TargetRing({ value, target, label, color, size = 80, formatValue
           />
         </svg>
         <div className="absolute flex flex-col items-center">
-          <span className="text-lg font-bold tabular-nums text-gray-100">{displayValue}</span>
-          <span className="text-[10px] text-gray-500">/{displayTarget}</span>
+          <span className="text-lg font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{displayValue}</span>
+          <span className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>/{displayTarget}</span>
         </div>
       </div>
-      <span className="text-xs text-gray-400">{label}</span>
+      <span className="text-xs" style={{ color: 'var(--fg-secondary)' }}>{label}</span>
     </div>
   );
 }

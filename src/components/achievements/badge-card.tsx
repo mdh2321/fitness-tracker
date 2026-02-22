@@ -20,10 +20,10 @@ export function BadgeCard({ badgeKey, earnedAt, locked = false }: BadgeCardProps
         <span className="text-4xl">{badge.icon}</span>
       </div>
       <div className="px-3 pb-4">
-        <h3 className="text-sm font-semibold text-gray-200">{badge.name}</h3>
-        <p className="text-xs text-gray-500 mt-1">{badge.description}</p>
+        <h3 className="text-sm font-semibold" style={{ color: 'var(--fg)' }}>{badge.name}</h3>
+        <p className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>{badge.description}</p>
         {earnedAt && (
-          <p className="text-[10px] text-gray-600 mt-2">{format(parseISO(earnedAt), 'MMM d, yyyy')}</p>
+          <p className="text-[10px] mt-2" style={{ color: 'var(--fg-muted)' }}>{format(parseISO(earnedAt), 'MMM d, yyyy')}</p>
         )}
       </div>
     </Card>

@@ -16,7 +16,7 @@ export default function AchievementsPage() {
       <div className="max-w-3xl mx-auto">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-36 rounded-xl bg-[#141419] border border-[#2a2a35] animate-pulse" />
+            <div key={i} className="h-36 rounded-xl border animate-pulse" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }} />
           ))}
         </div>
       </div>
@@ -26,8 +26,8 @@ export default function AchievementsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-100">Achievements</h1>
-        <span className="text-sm text-gray-400">
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--fg)' }}>Achievements</h1>
+        <span className="text-sm" style={{ color: 'var(--fg-secondary)' }}>
           {earnedKeys.size} / {BADGES.length} earned
         </span>
       </div>
@@ -35,7 +35,7 @@ export default function AchievementsPage() {
       {earnedKeys.size === 0 && (
         <div className="text-center py-12">
           <Trophy className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400">Complete workouts to earn badges!</p>
+          <p style={{ color: 'var(--fg-secondary)' }}>Complete workouts to earn badges!</p>
         </div>
       )}
 

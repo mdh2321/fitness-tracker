@@ -6,6 +6,7 @@ import type { Workout } from '@/lib/types';
 import type { WorkoutType } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
 import { useMemo } from 'react';
+import { useTheme } from '@/components/providers/theme-provider';
 
 interface MonthlyTotalsBarProps {
   workouts: Workout[];
@@ -13,8 +14,16 @@ interface MonthlyTotalsBarProps {
 }
 
 export function MonthlyTotalsBar({ workouts, months = 6 }: MonthlyTotalsBarProps) {
+  const { theme } = useTheme();
+  const ct = {
+    tick: theme === 'light' ? '#71717a' : '#6b7280',
+    tickSecondary: theme === 'light' ? '#71717a' : '#9ca3af',
+    tooltipBg: theme === 'light' ? '#ffffff' : '#141419',
+    tooltipBorder: theme === 'light' ? '#cccbda' : '#2a2a35',
+    tooltipColor: theme === 'light' ? '#18181b' : '#e5e5e5',
+  };
+
   const chartData = useMemo(() => {
-    // Group workouts by month and type (duration in minutes)
     const byMonth: Record<string, Record<string, number>> = {};
 
     for (const w of workouts) {
@@ -23,7 +32,6 @@ export function MonthlyTotalsBar({ workouts, months = 6 }: MonthlyTotalsBarProps
       byMonth[month][w.type] = (byMonth[month][w.type] || 0) + w.duration_minutes;
     }
 
-    // Get last N months sorted
     const allMonths = Object.keys(byMonth).sort().slice(-months);
 
     return allMonths.map((m) => ({
@@ -37,7 +45,7 @@ export function MonthlyTotalsBar({ workouts, months = 6 }: MonthlyTotalsBarProps
   }, [workouts, months]);
 
   if (chartData.length === 0) {
-    return <div className="text-center text-gray-500 text-sm py-8">No data yet</div>;
+    return <div className="text-center text-sm py-8" style={{ color: 'var(--fg-muted)' }}>No data yet</div>;
   }
 
   return (
@@ -47,7 +55,7 @@ export function MonthlyTotalsBar({ workouts, months = 6 }: MonthlyTotalsBarProps
           type="number"
           axisLine={false}
           tickLine={false}
-          tick={{ fill: '#6b7280', fontSize: 11 }}
+          tick={{ fill: ct.tick, fontSize: 11 }}
           tickFormatter={(v) => `${v}m`}
         />
         <YAxis
@@ -55,15 +63,15 @@ export function MonthlyTotalsBar({ workouts, months = 6 }: MonthlyTotalsBarProps
           dataKey="month"
           axisLine={false}
           tickLine={false}
-          tick={{ fill: '#9ca3af', fontSize: 12 }}
+          tick={{ fill: ct.tickSecondary, fontSize: 12 }}
           width={70}
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: '#141419',
-            border: '1px solid #2a2a35',
+            backgroundColor: ct.tooltipBg,
+            border: `1px solid ${ct.tooltipBorder}`,
             borderRadius: '8px',
-            color: '#e5e5e5',
+            color: ct.tooltipColor,
             fontSize: '12px',
           }}
           formatter={(value: unknown, name: unknown) => [
@@ -73,7 +81,7 @@ export function MonthlyTotalsBar({ workouts, months = 6 }: MonthlyTotalsBarProps
         />
         <Legend
           formatter={(value: string) => WORKOUT_TYPE_LABELS[value as WorkoutType] || value}
-          wrapperStyle={{ fontSize: '11px', color: '#9ca3af' }}
+          wrapperStyle={{ fontSize: '11px', color: ct.tickSecondary }}
         />
         <Bar dataKey="strength" stackId="a" fill={WORKOUT_TYPE_COLORS.strength} radius={0} />
         <Bar dataKey="cardio" stackId="a" fill={WORKOUT_TYPE_COLORS.cardio} radius={0} />

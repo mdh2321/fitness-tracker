@@ -179,50 +179,46 @@ export function TrendSection({ strainData }: TrendSectionProps) {
           <CardTitle>Trends</CardTitle>
           <div className="flex items-center gap-2">
             {/* Period selector */}
-            <div className="flex items-center rounded-lg bg-[#1a1a24] p-1 gap-0.5">
+            <div className="flex items-center rounded-lg p-1 gap-0.5" style={{ background: 'var(--bg-elevated)' }}>
               {PERIODS.map((p) => (
                 <button
                   key={p.value}
                   onClick={() => setPeriod(p.value)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    period === p.value
-                      ? 'bg-[#2a2a35] text-gray-100'
-                      : 'text-gray-500 hover:text-gray-300'
-                  }`}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors`}
+                  style={period === p.value ? { background: 'var(--border)', color: 'var(--fg)' } : { color: 'var(--fg-muted)' }}
                 >
                   {p.label}
                 </button>
               ))}
             </div>
             {/* Metric selector */}
-            <div className="flex items-center rounded-lg bg-[#1a1a24] p-1 gap-0.5">
+            <div className="flex items-center rounded-lg p-1 gap-0.5" style={{ background: 'var(--bg-elevated)' }}>
               {METRICS.map((m) => (
                 <button
                   key={m.value}
                   onClick={() => setMetric(m.value)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    metric === m.value
-                      ? 'bg-[#2a2a35] text-gray-100'
-                      : 'text-gray-500 hover:text-gray-300'
-                  }`}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors`}
+                  style={metric === m.value ? { background: 'var(--border)', color: 'var(--fg)' } : { color: 'var(--fg-muted)' }}
                 >
                   {m.label}
                 </button>
               ))}
             </div>
             {/* Chart type toggle */}
-            <div className="flex items-center rounded-lg bg-[#1a1a24] p-1 gap-0.5">
+            <div className="flex items-center rounded-lg p-1 gap-0.5" style={{ background: 'var(--bg-elevated)' }}>
               <button
                 onClick={() => setChartType('line')}
                 title="Line chart"
-                className={`p-1.5 rounded-md transition-colors ${chartType === 'line' ? 'bg-[#2a2a35] text-gray-100' : 'text-gray-500 hover:text-gray-300'}`}
+                className={`p-1.5 rounded-md transition-colors`}
+                style={chartType === 'line' ? { background: 'var(--border)', color: 'var(--fg)' } : { color: 'var(--fg-muted)' }}
               >
                 <LineChart size={14} />
               </button>
               <button
                 onClick={() => setChartType('bar')}
                 title="Bar chart"
-                className={`p-1.5 rounded-md transition-colors ${chartType === 'bar' ? 'bg-[#2a2a35] text-gray-100' : 'text-gray-500 hover:text-gray-300'}`}
+                className={`p-1.5 rounded-md transition-colors`}
+                style={chartType === 'bar' ? { background: 'var(--border)', color: 'var(--fg)' } : { color: 'var(--fg-muted)' }}
               >
                 <BarChart2 size={14} />
               </button>

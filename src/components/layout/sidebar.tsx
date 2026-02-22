@@ -24,10 +24,10 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-[#0e0e14] border-r border-[#2a2a35]">
-      <div className="flex items-center gap-2 px-6 py-5 border-b border-[#2a2a35]">
+    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 border-r" style={{ background: 'var(--bg-sidebar)', borderColor: 'var(--border)' }}>
+      <div className="flex items-center gap-2 px-6 py-5 border-b" style={{ borderColor: 'var(--border)' }}>
         <Activity className="h-7 w-7 text-[#00d26a]" />
-        <span className="text-xl font-bold text-gray-100 tracking-tight">FitTrack</span>
+        <span className="text-xl font-bold tracking-tight" style={{ color: 'var(--fg)' }}>FitTrack</span>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1">
         {navItems.map((item) => {
@@ -40,8 +40,9 @@ export function Sidebar() {
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 isActive
                   ? 'bg-[#00d26a]/10 text-[#00d26a]'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-[#1a1a24]'
+                  : 'hover:bg-[var(--bg-elevated)]'
               )}
+              style={isActive ? {} : { color: 'var(--fg-muted)' }}
             >
               <item.icon className="h-5 w-5" />
               {item.label}

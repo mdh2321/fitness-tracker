@@ -4,6 +4,7 @@ import { workouts, dailyStrain, exercises, exerciseSets, userSettings } from '@/
 import { desc, eq, sql, gte, and } from 'drizzle-orm';
 import { calculateStreaks } from '@/lib/streaks';
 import { calculateExerciseStreak } from '@/lib/streaks';
+import { PASSIVE_ACTIVITIES } from '@/lib/constants';
 import { format, subDays, startOfWeek, endOfWeek, parseISO, getDaysInMonth, startOfMonth, addDays } from 'date-fns';
 
 export async function GET(request: NextRequest) {
@@ -38,14 +39,18 @@ export async function GET(request: NextRequest) {
       started_at: workouts.started_at,
       duration_minutes: workouts.duration_minutes,
       type: workouts.type,
+      name: workouts.name,
     })
     .from(workouts);
 
-  const streaks = calculateStreaks(allWorkouts.map((w) => w.started_at));
+  // Active workouts exclude passive activities (e.g. Walking) from goal/streak metrics
+  const activeWorkouts = allWorkouts.filter((w) => !PASSIVE_ACTIVITIES.has(w.name));
 
-  // Exercise streak (30 min/day)
+  const streaks = calculateStreaks(activeWorkouts.map((w) => w.started_at));
+
+  // Exercise streak (30 min/day) — excludes passive activities
   const dailyMinutesMap: Record<string, number> = {};
-  for (const w of allWorkouts) {
+  for (const w of activeWorkouts) {
     const d = format(parseISO(w.started_at), 'yyyy-MM-dd');
     dailyMinutesMap[d] = (dailyMinutesMap[d] || 0) + w.duration_minutes;
   }
@@ -64,7 +69,11 @@ export async function GET(request: NextRequest) {
     .filter((w) => CARDIO_ACTIVITIES.has(w.name))
     .reduce((sum, w) => sum + w.duration_minutes, 0);
   const strengthSessions = weekWorkouts.filter((w) => w.type === 'strength').length;
-  const uniqueWorkoutDays = new Set(weekWorkouts.map((w) => format(parseISO(w.started_at), 'yyyy-MM-dd'))).size;
+  const uniqueWorkoutDays = new Set(
+    weekWorkouts
+      .filter((w) => !PASSIVE_ACTIVITIES.has(w.name))
+      .map((w) => format(parseISO(w.started_at), 'yyyy-MM-dd'))
+  ).size;
 
   // Weekly steps from daily_strain
   const weekStrainData = await db
@@ -113,11 +122,11 @@ export async function GET(request: NextRequest) {
     ? recentStrain.reduce((s, d) => s + d.total_volume, 0) / recentStrain.length
     : 0;
 
-  // Total stats
-  const totalWorkouts = allWorkouts.length;
+  // Total stats — excludes passive activities
+  const totalWorkouts = activeWorkouts.length;
   const allStrainData = await db.select().from(dailyStrain);
   const totalCalories = allStrainData.reduce((s, d) => s + d.total_calories, 0);
-  const totalDuration = allWorkouts.reduce((s, w) => s + w.duration_minutes, 0);
+  const totalDuration = activeWorkouts.reduce((s, w) => s + w.duration_minutes, 0);
 
   return NextResponse.json({
     today: {

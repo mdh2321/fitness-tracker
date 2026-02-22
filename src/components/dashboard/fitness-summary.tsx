@@ -10,6 +10,7 @@ import type { WorkoutType } from '@/lib/constants';
 
 interface FitnessSummaryProps {
   workouts: Workout[];
+  passiveWorkouts: Workout[];
 }
 
 type ViewMode = 'time' | 'count';
@@ -108,7 +109,7 @@ function BreakdownView({ workouts, mode }: { workouts: Workout[]; mode: ViewMode
   );
 }
 
-export function FitnessSummary({ workouts }: FitnessSummaryProps) {
+export function FitnessSummary({ workouts, passiveWorkouts }: FitnessSummaryProps) {
   const [mode, setMode] = useState<ViewMode>('time');
   const now = new Date();
 
@@ -170,6 +171,31 @@ export function FitnessSummary({ workouts }: FitnessSummaryProps) {
             <BreakdownView workouts={workouts} mode={mode} />
           </TabsContent>
         </Tabs>
+
+        {passiveWorkouts.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-[#2a2a35]">
+            <p className="text-xs text-gray-600 mb-2 uppercase tracking-wide">Not counted in workout goals</p>
+            {(() => {
+              const totals: Record<string, number> = {};
+              for (const w of passiveWorkouts) {
+                totals[w.name] = (totals[w.name] || 0) + w.duration_minutes;
+              }
+              return Object.entries(totals).map(([name, minutes]) => {
+                const hours = Math.floor(minutes / 60);
+                const mins = minutes % 60;
+                return (
+                  <div key={name} className="flex items-center gap-2 py-0.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-gray-700 flex-shrink-0" />
+                    <span className="text-xs text-gray-600">{name}</span>
+                    <span className="text-xs text-gray-700 ml-auto tabular-nums">
+                      {hours > 0 ? `${hours}h ${mins}m` : `${mins}m`}
+                    </span>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

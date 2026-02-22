@@ -71,6 +71,10 @@ export async function POST(request: NextRequest) {
     const strains = dayWorkouts.map((w) => w.strain_score);
     const aggStrain = aggregateDailyStrain(strains);
 
+    // Preserve existing steps — read before insert in case this is a fresh row
+    const existingStrain = await db.select().from(dailyStrain).where(eq(dailyStrain.date, date)).get();
+    const existingSteps = existingStrain?.steps ?? 0;
+
     await db
       .insert(dailyStrain)
       .values({
@@ -80,6 +84,7 @@ export async function POST(request: NextRequest) {
         total_duration: dayWorkouts.reduce((s, w) => s + w.duration_minutes, 0),
         total_volume: 0,
         total_calories: dayWorkouts.reduce((s, w) => s + (w.calories || 0), 0),
+        steps: existingSteps,
       })
       .onConflictDoUpdate({
         target: dailyStrain.date,

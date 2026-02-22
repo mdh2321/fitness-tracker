@@ -14,19 +14,30 @@ import { MonthlyStrainRings } from '@/components/charts/monthly-strain-rings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Activity } from 'lucide-react';
+import { PASSIVE_ACTIVITIES } from '@/lib/constants';
 
 export default function DashboardPage() {
   const { data: stats, isLoading } = useStats();
   const { data: strainData } = useStrainData(365);
   const { data: allWorkouts } = useWorkouts(500);
 
-  // Unique workout dates for streaks month navigation
-  const workoutDates = useMemo(() => {
+  // Split workouts into active and passive
+  const activeWorkouts = useMemo(() => {
     if (!allWorkouts) return [];
-    const seen = new Set<string>();
-    for (const w of allWorkouts) seen.add(w.started_at.slice(0, 10));
-    return [...seen];
+    return allWorkouts.filter((w) => !PASSIVE_ACTIVITIES.has(w.name));
   }, [allWorkouts]);
+
+  const passiveWorkouts = useMemo(() => {
+    if (!allWorkouts) return [];
+    return allWorkouts.filter((w) => PASSIVE_ACTIVITIES.has(w.name));
+  }, [allWorkouts]);
+
+  // Unique active workout dates for streaks month navigation (Walking excluded)
+  const workoutDates = useMemo(() => {
+    const seen = new Set<string>();
+    for (const w of activeWorkouts) seen.add(w.started_at.slice(0, 10));
+    return [...seen];
+  }, [activeWorkouts]);
 
   // Build strain-by-date map for monthly rings
   const strainByDate = useMemo(() => {
@@ -109,7 +120,7 @@ export default function DashboardPage() {
 
       {/* Workouts breakdown — combined, horizontal thin bars, week/month/all tabs */}
       {allWorkouts && allWorkouts.length > 0 && (
-        <FitnessSummary workouts={allWorkouts} />
+        <FitnessSummary workouts={activeWorkouts} passiveWorkouts={passiveWorkouts} />
       )}
 
       {/* Monthly Strain Rings */}

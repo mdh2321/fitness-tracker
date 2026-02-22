@@ -50,8 +50,19 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
       sql`${workouts.started_at} < ${dayEndUTC}`
     ));
 
+  // Always preserve existing steps — never delete the daily_strain row
+  const existingStrain = await db.select().from(dailyStrain).where(eq(dailyStrain.date, date)).get();
+  const existingSteps = existingStrain?.steps ?? 0;
+
   if (dayWorkouts.length === 0) {
-    await db.delete(dailyStrain).where(eq(dailyStrain.date, date));
+    // Zero out workout fields but keep the row so steps data is preserved
+    await db
+      .insert(dailyStrain)
+      .values({ date, strain_score: 0, workout_count: 0, total_duration: 0, total_volume: 0, total_calories: 0, steps: existingSteps })
+      .onConflictDoUpdate({
+        target: dailyStrain.date,
+        set: { strain_score: 0, workout_count: 0, total_duration: 0, total_volume: 0, total_calories: 0 },
+      });
   } else {
     const strains = dayWorkouts.map((w) => w.strain_score);
     const aggStrain = aggregateDailyStrain(strains);
@@ -64,6 +75,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
         total_duration: dayWorkouts.reduce((s, w) => s + w.duration_minutes, 0),
         total_volume: 0,
         total_calories: dayWorkouts.reduce((s, w) => s + (w.calories || 0), 0),
+        steps: existingSteps,
       })
       .onConflictDoUpdate({
         target: dailyStrain.date,

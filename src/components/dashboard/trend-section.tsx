@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendLine } from '@/components/charts/trend-line';
+import { TrendBar } from '@/components/charts/trend-bar';
+import { LineChart, BarChart2 } from 'lucide-react';
 import { format, parseISO, eachWeekOfInterval, endOfWeek, eachMonthOfInterval, endOfMonth } from 'date-fns';
 import type { DailyStrain } from '@/lib/types';
 
@@ -38,6 +40,7 @@ interface TrendSectionProps {
 export function TrendSection({ strainData }: TrendSectionProps) {
   const [period, setPeriod] = useState<Period>('daily');
   const [metric, setMetric] = useState<Metric>('strain');
+  const [chartType, setChartType] = useState<'line' | 'bar'>('line');
 
   // Daily series
   const dailyData = useMemo(() => ({
@@ -207,11 +210,30 @@ export function TrendSection({ strainData }: TrendSectionProps) {
                 </button>
               ))}
             </div>
+            {/* Chart type toggle */}
+            <div className="flex items-center rounded-lg bg-[#1a1a24] p-1 gap-0.5">
+              <button
+                onClick={() => setChartType('line')}
+                title="Line chart"
+                className={`p-1.5 rounded-md transition-colors ${chartType === 'line' ? 'bg-[#2a2a35] text-gray-100' : 'text-gray-500 hover:text-gray-300'}`}
+              >
+                <LineChart size={14} />
+              </button>
+              <button
+                onClick={() => setChartType('bar')}
+                title="Bar chart"
+                className={`p-1.5 rounded-md transition-colors ${chartType === 'bar' ? 'bg-[#2a2a35] text-gray-100' : 'text-gray-500 hover:text-gray-300'}`}
+              >
+                <BarChart2 size={14} />
+              </button>
+            </div>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <TrendLine data={chartData} color={config.color} label={chartLabel} />
+        {chartType === 'line'
+          ? <TrendLine data={chartData} color={config.color} label={chartLabel} />
+          : <TrendBar  data={chartData} color={config.color} label={chartLabel} period={period} />}
       </CardContent>
     </Card>
   );

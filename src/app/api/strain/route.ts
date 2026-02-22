@@ -16,9 +16,10 @@ export async function GET(request: NextRequest) {
     .from(dailyStrain)
     .where(and(gte(dailyStrain.date, from), lte(dailyStrain.date, to)));
 
-  const workoutDurationRows = await db
+  const activeWorkoutRows = await db
     .select({
       date: sql<string>`date(${workouts.started_at})`,
+      count: sql<number>`count(*)`,
       total: sql<number>`sum(${workouts.duration_minutes})`,
     })
     .from(workouts)
@@ -31,9 +32,13 @@ export async function GET(request: NextRequest) {
     )
     .groupBy(sql`date(${workouts.started_at})`);
 
-  const workoutDurationMap = new Map(workoutDurationRows.map((r) => [r.date, r.total]));
+  const activeMap = new Map(activeWorkoutRows.map((r) => [r.date, r]));
 
   return NextResponse.json(
-    data.map((d) => ({ ...d, workout_duration: workoutDurationMap.get(d.date) ?? 0 }))
+    data.map((d) => ({
+      ...d,
+      workout_count: activeMap.get(d.date)?.count ?? 0,
+      workout_duration: activeMap.get(d.date)?.total ?? 0,
+    }))
   );
 }

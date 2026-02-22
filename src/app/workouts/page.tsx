@@ -13,6 +13,7 @@ const PAGE_SIZE = 50;
 
 export default function WorkoutsPage() {
   const [limit, setLimit] = useState(PAGE_SIZE);
+  const [showWalking, setShowWalking] = useState(false);
   const { data: workouts, isLoading } = useWorkouts(limit);
 
   const canLoadMore = workouts && workouts.length === limit;
@@ -24,11 +25,26 @@ export default function WorkoutsPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-100">Workouts</h1>
-        <Link href="/workouts/new">
-          <Button>
-            <Plus className="mr-1 h-4 w-4" /> New Workout
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {passiveList.length > 0 && (
+            <button
+              onClick={() => setShowWalking((v) => !v)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                showWalking
+                  ? 'bg-[#00bcd4]/10 border-[#00bcd4]/30 text-[#00bcd4]'
+                  : 'bg-[#0a0a0f] border-[#2a2a35] text-gray-500 hover:text-gray-400'
+              }`}
+            >
+              <Footprints className="h-3.5 w-3.5" />
+              Walking
+            </button>
+          )}
+          <Link href="/workouts/new">
+            <Button>
+              <Plus className="mr-1 h-4 w-4" /> New Workout
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {isLoading && (
@@ -58,7 +74,7 @@ export default function WorkoutsPage() {
             <WorkoutCard key={workout.id} workout={workout} />
           ))}
 
-          {passiveList.length > 0 && (
+          {passiveList.length > 0 && showWalking && (
             <>
               <div className="flex items-center gap-2 pt-2">
                 <Footprints className="h-4 w-4 text-gray-600" />

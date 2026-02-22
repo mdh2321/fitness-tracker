@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { dailyStrain } from '@/db/schema';
-import { gte, lte, and } from 'drizzle-orm';
-import { format, subDays, subWeeks } from 'date-fns';
+import { dailyStrain, workouts } from '@/db/schema';
+import { gte, lte, and, not, inArray, sql } from 'drizzle-orm';
+import { format, subDays } from 'date-fns';
+import { PASSIVE_ACTIVITIES } from '@/lib/constants';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -15,5 +16,24 @@ export async function GET(request: NextRequest) {
     .from(dailyStrain)
     .where(and(gte(dailyStrain.date, from), lte(dailyStrain.date, to)));
 
-  return NextResponse.json(data);
+  const workoutDurationRows = await db
+    .select({
+      date: sql<string>`date(${workouts.started_at})`,
+      total: sql<number>`sum(${workouts.duration_minutes})`,
+    })
+    .from(workouts)
+    .where(
+      and(
+        sql`date(${workouts.started_at}) >= ${from}`,
+        sql`date(${workouts.started_at}) <= ${to}`,
+        not(inArray(workouts.name, Array.from(PASSIVE_ACTIVITIES)))
+      )
+    )
+    .groupBy(sql`date(${workouts.started_at})`);
+
+  const workoutDurationMap = new Map(workoutDurationRows.map((r) => [r.date, r.total]));
+
+  return NextResponse.json(
+    data.map((d) => ({ ...d, workout_duration: workoutDurationMap.get(d.date) ?? 0 }))
+  );
 }

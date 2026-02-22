@@ -44,6 +44,7 @@ export interface DailyStrain {
   strain_score: number;
   workout_count: number;
   total_duration: number;
+  workout_duration?: number;
   total_volume: number;
   total_calories: number;
   steps: number;

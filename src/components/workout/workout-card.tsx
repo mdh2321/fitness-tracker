@@ -4,28 +4,31 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { getStrainColor, getStrainLabel, getWorkoutColor } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
-import { Clock, Flame, Activity, Heart, ChevronRight } from 'lucide-react';
+import { Clock, Flame, Activity, Heart, ChevronRight, Footprints } from 'lucide-react';
 import type { Workout } from '@/lib/types';
 import type { WorkoutType } from '@/lib/constants';
 
-export function WorkoutCard({ workout }: { workout: Workout }) {
+export function WorkoutCard({ workout, isPassive }: { workout: Workout; isPassive?: boolean }) {
   return (
     <Link href={`/workouts/${workout.id}`}>
       <Card
-        className="hover:border-[#3a3a45] transition-colors cursor-pointer overflow-hidden"
+        className={`hover:border-[#3a3a45] transition-colors cursor-pointer overflow-hidden${isPassive ? ' opacity-70' : ''}`}
         style={{ borderLeftColor: getWorkoutColor(workout.name, workout.type as WorkoutType), borderLeftWidth: '3px' }}
       >
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="text-base font-semibold text-gray-100 truncate">{workout.name}</h3>
+              {isPassive && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#00bcd4]/10 text-[#00bcd4] leading-none">Active Time</span>
+              )}
             </div>
             <p className="text-sm text-gray-400">
               {format(parseISO(workout.started_at), 'MMM d, yyyy · h:mm a')}
             </p>
             <div className="flex items-center gap-4 mt-2">
               <span className="flex items-center gap-1 text-sm text-gray-400">
-                <Clock className="h-3.5 w-3.5" />
+                {isPassive ? <Footprints className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
                 {workout.duration_minutes}m
               </span>
               {workout.source === 'manual' && (

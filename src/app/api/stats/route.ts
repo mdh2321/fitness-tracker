@@ -171,5 +171,6 @@ export async function GET(request: NextRequest) {
       calories: totalCalories,
       duration: totalDuration,
     },
+    activeWorkoutDates: [...new Set(activeWorkouts.map((w) => w.started_at.slice(0, 10)))],
   });
 }

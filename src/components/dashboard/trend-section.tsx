@@ -7,7 +7,7 @@ import { format, parseISO, eachWeekOfInterval, endOfWeek, eachMonthOfInterval, e
 import type { DailyStrain } from '@/lib/types';
 
 type Period = 'daily' | 'weekly' | 'monthly';
-type Metric = 'strain' | 'exercises' | 'duration' | 'steps';
+type Metric = 'strain' | 'exercises' | 'activeTime' | 'workoutTime' | 'steps';
 
 const PERIODS: { value: Period; label: string }[] = [
   { value: 'daily', label: 'Daily' },
@@ -18,14 +18,16 @@ const PERIODS: { value: Period; label: string }[] = [
 const METRICS: { value: Metric; label: string }[] = [
   { value: 'strain', label: 'Strain' },
   { value: 'exercises', label: 'Count' },
-  { value: 'duration', label: 'Duration' },
+  { value: 'activeTime', label: 'Active Time' },
+  { value: 'workoutTime', label: 'Workout Time' },
   { value: 'steps', label: 'Steps' },
 ];
 
 const METRIC_CONFIG: Record<Metric, { color: string; label: string; aggLabel: string }> = {
   strain: { color: '#00d26a', label: 'Strain', aggLabel: 'Avg Strain' },
   exercises: { color: '#8b5cf6', label: 'Workouts', aggLabel: 'Workouts' },
-  duration: { color: '#00bcd4', label: 'Duration (min)', aggLabel: 'Duration (min)' },
+  activeTime: { color: '#00bcd4', label: 'Active Time (min)', aggLabel: 'Active Time (min)' },
+  workoutTime: { color: '#8b5cf6', label: 'Workout Time (min)', aggLabel: 'Workout Time (min)' },
   steps: { color: '#ff6b35', label: 'Steps', aggLabel: 'Steps' },
 };
 
@@ -40,14 +42,15 @@ export function TrendSection({ strainData }: TrendSectionProps) {
   // Daily series
   const dailyData = useMemo(() => ({
     strain: strainData.map((d) => ({ date: d.date, value: d.strain_score })),
-    duration: strainData.map((d) => ({ date: d.date, value: d.total_duration })),
+    activeTime: strainData.map((d) => ({ date: d.date, value: d.total_duration })),
+    workoutTime: strainData.map((d) => ({ date: d.date, value: d.workout_duration ?? 0 })),
     exercises: strainData.map((d) => ({ date: d.date, value: d.workout_count })),
     steps: strainData.map((d) => ({ date: d.date, value: d.steps || 0 })),
   }), [strainData]);
 
   // Weekly aggregation
   const weeklyData = useMemo(() => {
-    if (strainData.length < 2) return { strain: [], duration: [], exercises: [], steps: [] };
+    if (strainData.length < 2) return { strain: [], activeTime: [], workoutTime: [], exercises: [], steps: [] };
     const sorted = [...strainData].sort((a, b) => a.date.localeCompare(b.date));
     const firstDate = parseISO(sorted[0].date);
     const lastDate = parseISO(sorted[sorted.length - 1].date);
@@ -64,12 +67,21 @@ export function TrendSection({ strainData }: TrendSectionProps) {
         }
         return { date: format(weekStart, 'yyyy-MM-dd'), value: count > 0 ? Math.round(total / count * 10) / 10 : 0 };
       }),
-      duration: weeks.map((weekStart) => {
+      activeTime: weeks.map((weekStart) => {
         const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
         let total = 0;
         for (let d = weekStart; d <= weekEnd; d = new Date(d.getTime() + 86400000)) {
           const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
           if (entry) total += entry.total_duration;
+        }
+        return { date: format(weekStart, 'yyyy-MM-dd'), value: total };
+      }),
+      workoutTime: weeks.map((weekStart) => {
+        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+        let total = 0;
+        for (let d = weekStart; d <= weekEnd; d = new Date(d.getTime() + 86400000)) {
+          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
+          if (entry) total += entry.workout_duration ?? 0;
         }
         return { date: format(weekStart, 'yyyy-MM-dd'), value: total };
       }),
@@ -96,7 +108,7 @@ export function TrendSection({ strainData }: TrendSectionProps) {
 
   // Monthly aggregation
   const monthlyData = useMemo(() => {
-    if (strainData.length < 2) return { strain: [], duration: [], exercises: [], steps: [] };
+    if (strainData.length < 2) return { strain: [], activeTime: [], workoutTime: [], exercises: [], steps: [] };
     const sorted = [...strainData].sort((a, b) => a.date.localeCompare(b.date));
     const firstDate = parseISO(sorted[0].date);
     const lastDate = parseISO(sorted[sorted.length - 1].date);
@@ -113,12 +125,21 @@ export function TrendSection({ strainData }: TrendSectionProps) {
         }
         return { date: format(monthStart, 'yyyy-MM-dd'), value: count > 0 ? Math.round(total / count * 10) / 10 : 0 };
       }),
-      duration: months.map((monthStart) => {
+      activeTime: months.map((monthStart) => {
         const monthEnd = endOfMonth(monthStart);
         let total = 0;
         for (let d = monthStart; d <= monthEnd; d = new Date(d.getTime() + 86400000)) {
           const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
           if (entry) total += entry.total_duration;
+        }
+        return { date: format(monthStart, 'yyyy-MM-dd'), value: total };
+      }),
+      workoutTime: months.map((monthStart) => {
+        const monthEnd = endOfMonth(monthStart);
+        let total = 0;
+        for (let d = monthStart; d <= monthEnd; d = new Date(d.getTime() + 86400000)) {
+          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
+          if (entry) total += entry.workout_duration ?? 0;
         }
         return { date: format(monthStart, 'yyyy-MM-dd'), value: total };
       }),

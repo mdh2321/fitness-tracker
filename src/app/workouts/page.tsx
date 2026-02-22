@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useWorkouts } from '@/hooks/use-workouts';
 import { WorkoutCard } from '@/components/workout/workout-card';
 import { Button } from '@/components/ui/button';
-import { Plus, Dumbbell } from 'lucide-react';
+import { Plus, Dumbbell, Footprints } from 'lucide-react';
+import { PASSIVE_ACTIVITIES } from '@/lib/constants';
 import type { Workout } from '@/lib/types';
 
 const PAGE_SIZE = 50;
@@ -15,6 +16,9 @@ export default function WorkoutsPage() {
   const { data: workouts, isLoading } = useWorkouts(limit);
 
   const canLoadMore = workouts && workouts.length === limit;
+
+  const activeList = workouts ? workouts.filter((w: Workout) => !PASSIVE_ACTIVITIES.has(w.name)) : [];
+  const passiveList = workouts ? workouts.filter((w: Workout) => PASSIVE_ACTIVITIES.has(w.name)) : [];
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -50,9 +54,22 @@ export default function WorkoutsPage() {
 
       {workouts && workouts.length > 0 && (
         <div className="space-y-3">
-          {workouts.map((workout: Workout) => (
+          {activeList.map((workout: Workout) => (
             <WorkoutCard key={workout.id} workout={workout} />
           ))}
+
+          {passiveList.length > 0 && (
+            <>
+              <div className="flex items-center gap-2 pt-2">
+                <Footprints className="h-4 w-4 text-gray-600" />
+                <span className="text-sm text-gray-600">Active Time</span>
+                <div className="flex-1 h-px bg-[#2a2a35]" />
+              </div>
+              {passiveList.map((workout: Workout) => (
+                <WorkoutCard key={workout.id} workout={workout} isPassive />
+              ))}
+            </>
+          )}
         </div>
       )}
 

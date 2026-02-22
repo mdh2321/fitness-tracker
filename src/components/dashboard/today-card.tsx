@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { StrainRing } from '@/components/charts/strain-ring';
-import { Clock, Flame, Dumbbell, Footprints } from 'lucide-react';
+import { Activity, Flame, Dumbbell, Footprints } from 'lucide-react';
 
 interface TodayCardProps {
   strain: number;
@@ -29,8 +29,8 @@ export function TodayCard({ strain, workouts, duration, calories, steps }: Today
             </div>
             <div className="space-y-0.5">
               <div className="flex items-center gap-1.5 text-gray-400">
-                <Clock className="h-4 w-4" />
-                <span className="text-xs">Duration</span>
+                <Activity className="h-4 w-4" />
+                <span className="text-xs">Active Time</span>
               </div>
               <div className="text-2xl font-bold tabular-nums text-gray-100">{duration}<span className="text-sm font-normal text-gray-500">m</span></div>
             </div>

@@ -27,17 +27,8 @@ export default function DashboardPage() {
     return allWorkouts.filter((w) => !PASSIVE_ACTIVITIES.has(w.name));
   }, [allWorkouts]);
 
-  const passiveWorkouts = useMemo(() => {
-    if (!allWorkouts) return [];
-    return allWorkouts.filter((w) => PASSIVE_ACTIVITIES.has(w.name));
-  }, [allWorkouts]);
-
-  // Unique active workout dates for streaks month navigation (Walking excluded)
-  const workoutDates = useMemo(() => {
-    const seen = new Set<string>();
-    for (const w of activeWorkouts) seen.add(w.started_at.slice(0, 10));
-    return [...seen];
-  }, [activeWorkouts]);
+  // Use server-computed active workout dates (Walking excluded) for streaks calendar
+  const workoutDates = stats?.activeWorkoutDates || [];
 
   // Build strain-by-date map for monthly rings
   const strainByDate = useMemo(() => {
@@ -120,7 +111,7 @@ export default function DashboardPage() {
 
       {/* Workouts breakdown — combined, horizontal thin bars, week/month/all tabs */}
       {allWorkouts && allWorkouts.length > 0 && (
-        <FitnessSummary workouts={activeWorkouts} passiveWorkouts={passiveWorkouts} />
+        <FitnessSummary workouts={activeWorkouts} />
       )}
 
       {/* Monthly Strain Rings */}

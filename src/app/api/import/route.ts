@@ -3,7 +3,6 @@ import { db } from '@/db';
 import { workouts, dailyStrain } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { calculateStrainScore, aggregateDailyStrain } from '@/lib/strain';
-import { format, parseISO } from 'date-fns';
 import type { WorkoutType } from '@/lib/constants';
 import type { AppleHealthWorkout } from '@/lib/types';
 
@@ -44,8 +43,8 @@ export async function POST(request: NextRequest) {
     await db.insert(workouts).values({
       type: w.type,
       name: w.name,
-      started_at: new Date(w.startDate).toISOString(),
-      ended_at: new Date(w.endDate).toISOString(),
+      started_at: localDateTimeString(w.startDate),
+      ended_at: localDateTimeString(w.endDate),
       duration_minutes: w.duration,
       perceived_effort: estimateRPE(w),
       avg_heart_rate: w.avgHeartRate,
@@ -57,7 +56,7 @@ export async function POST(request: NextRequest) {
       created_at: new Date().toISOString(),
     });
 
-    affectedDates.add(format(new Date(w.startDate), 'yyyy-MM-dd'));
+    affectedDates.add(localDateTimeString(w.startDate).substring(0, 10));
     imported++;
   }
 
@@ -98,6 +97,15 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ imported, skipped });
+}
+
+// Extract local datetime from an Apple Health XML timestamp (e.g. "2026-02-23 09:29:00 +1100")
+// and return it as a fake-UTC ISO string (e.g. "2026-02-23T09:29:00.000Z") so that
+// SQLite's date() function returns the user's local date — consistent with manually-entered workouts.
+function localDateTimeString(dateStr: string): string {
+  const normalised = dateStr.trim().replace(' ', 'T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+  const match = normalised.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/);
+  return match ? `${match[1]}.000Z` : new Date(dateStr).toISOString();
 }
 
 function estimateRPE(w: AppleHealthWorkout): number {

@@ -199,10 +199,20 @@ export async function POST(request: NextRequest) {
     if (!mapping) { skippedWorkouts++; continue; }
 
     // Health Auto Export uses "start" / "end" (not "startDate" / "endDate")
-    const startDate = parseFlexibleDate(w.start ?? w.startDate ?? '');
+    const rawStartStr = (w.start ?? w.startDate ?? '').trim();
+    const startDate = parseFlexibleDate(rawStartStr);
     if (isNaN(startDate.getTime())) { skippedWorkouts++; continue; }
 
-    const endDate = (w.end ?? w.endDate) ? parseFlexibleDate(w.end ?? w.endDate) : null;
+    // Extract local datetime from the Apple Health string (which includes a timezone offset,
+    // e.g. "2026-02-23 09:29:00 +1100"). We store the local time without conversion so that
+    // SQLite's date() function returns the user's local date — consistent with manually-entered
+    // workouts which are submitted by the browser in local time.
+    const normalisedRaw = rawStartStr.replace(' ', 'T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+    const localDTMatch = normalisedRaw.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/);
+    const startedAtStored = localDTMatch ? `${localDTMatch[1]}.000Z` : startDate.toISOString();
+
+    const rawEndStr = (w.end ?? w.endDate ?? '').trim();
+    const endDate = rawEndStr ? parseFlexibleDate(rawEndStr) : null;
 
     // "duration" is in seconds in Health Auto Export
     let durationMinutes: number;
@@ -241,7 +251,7 @@ export async function POST(request: NextRequest) {
       user_resting_heart_rate: userRestingHR,
     });
 
-    const dateKey = format(startDate, 'yyyy-MM-dd');
+    const dateKey = startedAtStored.substring(0, 10);
 
     // Calories: v1 uses "totalEnergy" or "activeEnergy" (scalar), v2 uses "activeEnergyBurned"
     // AutoExport may send kJ — extractKcal handles unit conversion
@@ -253,7 +263,7 @@ export async function POST(request: NextRequest) {
     await db.insert(workouts).values({
       type: mapping.type,
       name: mapping.name,
-      started_at: startDate.toISOString(),
+      started_at: startedAtStored,
       ended_at: endDate?.toISOString() ?? null,
       duration_minutes: durationMinutes,
       perceived_effort: rpe,

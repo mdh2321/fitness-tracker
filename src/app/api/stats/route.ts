@@ -28,8 +28,8 @@ export async function GET(request: NextRequest) {
     .from(workouts)
     .where(
       and(
-        gte(workouts.started_at, weekStart),
-        sql`date(${workouts.started_at}) <= ${weekEnd}`
+        gte(workouts.local_date, weekStart),
+        sql`${workouts.local_date} <= ${weekEnd}`
       )
     );
 
@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
   const allWorkouts = await db
     .select({
       started_at: workouts.started_at,
+      local_date: workouts.local_date,
       duration_minutes: workouts.duration_minutes,
       type: workouts.type,
       name: workouts.name,
@@ -46,12 +47,12 @@ export async function GET(request: NextRequest) {
   // Active workouts exclude passive activities (e.g. Walking) from goal/streak metrics
   const activeWorkouts = allWorkouts.filter((w) => !PASSIVE_ACTIVITIES.has(w.name));
 
-  const streaks = calculateStreaks(activeWorkouts.map((w) => w.started_at));
+  const streaks = calculateStreaks(activeWorkouts.map((w) => w.local_date ?? w.started_at));
 
   // Exercise streak (30 min/day) — excludes passive activities
   const dailyMinutesMap: Record<string, number> = {};
   for (const w of activeWorkouts) {
-    const d = format(parseISO(w.started_at), 'yyyy-MM-dd');
+    const d = w.local_date ?? format(parseISO(w.started_at), 'yyyy-MM-dd');
     dailyMinutesMap[d] = (dailyMinutesMap[d] || 0) + w.duration_minutes;
   }
   const dailyMinutes = Object.entries(dailyMinutesMap).map(([date, totalMinutes]) => ({

@@ -21,34 +21,34 @@ export async function GET(request: NextRequest) {
   // Active-only workouts (Walking excluded) — for workout_count and workout_duration
   const activeWorkoutRows = await db
     .select({
-      date: sql<string>`date(${workouts.started_at})`,
+      date: workouts.local_date,
       count: sql<number>`count(*)`,
       total: sql<number>`sum(${workouts.duration_minutes})`,
     })
     .from(workouts)
     .where(
       and(
-        sql`date(${workouts.started_at}) >= ${from}`,
-        sql`date(${workouts.started_at}) <= ${to}`,
+        sql`${workouts.local_date} >= ${from}`,
+        sql`${workouts.local_date} <= ${to}`,
         not(inArray(workouts.name, passiveNames))
       )
     )
-    .groupBy(sql`date(${workouts.started_at})`);
+    .groupBy(workouts.local_date);
 
   // All workouts (including Walking) — for active_time (Active Time metric)
   const allWorkoutRows = await db
     .select({
-      date: sql<string>`date(${workouts.started_at})`,
+      date: workouts.local_date,
       total: sql<number>`sum(${workouts.duration_minutes})`,
     })
     .from(workouts)
     .where(
       and(
-        sql`date(${workouts.started_at}) >= ${from}`,
-        sql`date(${workouts.started_at}) <= ${to}`
+        sql`${workouts.local_date} >= ${from}`,
+        sql`${workouts.local_date} <= ${to}`
       )
     )
-    .groupBy(sql`date(${workouts.started_at})`);
+    .groupBy(workouts.local_date);
 
   const activeMap = new Map(activeWorkoutRows.map((r) => [r.date, r]));
   const allMap = new Map(allWorkoutRows.map((r) => [r.date, r.total]));

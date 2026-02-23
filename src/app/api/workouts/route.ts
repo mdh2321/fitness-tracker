@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { workouts, exercises, exerciseSets, dailyStrain, userSettings } from '@/db/schema';
-import { desc, eq, sql, and, gte, lte } from 'drizzle-orm';
+import { desc, eq, and, gte, lte } from 'drizzle-orm';
 import { calculateStrainScore, aggregateDailyStrain, calculateTotalVolume } from '@/lib/strain';
 import { evaluateAchievements } from '@/lib/achievements';
 import { format, parseISO } from 'date-fns';
+import { PASSIVE_ACTIVITIES } from '@/lib/constants';
 import type { WorkoutType } from '@/lib/constants';
 
 export async function GET(request: NextRequest) {
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
     notes,
     source,
     apple_health_id,
+    local_date: format(parseISO(started_at), 'yyyy-MM-dd'),
     created_at: new Date().toISOString(),
   }).returning();
 
@@ -127,19 +129,10 @@ export async function POST(request: NextRequest) {
 }
 
 async function updateDailyStrain(date: string) {
-  // Compute local day boundaries as UTC ISO strings for querying
-  const dayStart = new Date(`${date}T00:00:00`);
-  const dayEnd = new Date(dayStart.getTime() + 86400000);
-  const dayStartUTC = dayStart.toISOString();
-  const dayEndUTC = dayEnd.toISOString();
-
   const dayWorkouts = await db
     .select()
     .from(workouts)
-    .where(and(
-      gte(workouts.started_at, dayStartUTC),
-      sql`${workouts.started_at} < ${dayEndUTC}`
-    ));
+    .where(eq(workouts.local_date, date));
 
   // Preserve existing steps value
   const existing = await db.select().from(dailyStrain).where(eq(dailyStrain.date, date)).get();
@@ -165,6 +158,7 @@ async function updateDailyStrain(date: string) {
   const aggStrain = aggregateDailyStrain(strains);
   const totalDuration = dayWorkouts.reduce((s, w) => s + w.duration_minutes, 0);
   const totalCals = dayWorkouts.reduce((s, w) => s + (w.calories || 0), 0);
+  const activeCount = dayWorkouts.filter((w) => !PASSIVE_ACTIVITIES.has(w.name)).length;
 
   // Calculate total volume for the day
   let totalVolume = 0;
@@ -181,7 +175,7 @@ async function updateDailyStrain(date: string) {
     .values({
       date,
       strain_score: aggStrain,
-      workout_count: dayWorkouts.length,
+      workout_count: activeCount,
       total_duration: totalDuration,
       total_volume: totalVolume,
       total_calories: totalCals,
@@ -191,7 +185,7 @@ async function updateDailyStrain(date: string) {
       target: dailyStrain.date,
       set: {
         strain_score: aggStrain,
-        workout_count: dayWorkouts.length,
+        workout_count: activeCount,
         total_duration: totalDuration,
         total_volume: totalVolume,
         total_calories: totalCals,

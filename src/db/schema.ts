@@ -28,6 +28,7 @@ export const workouts = sqliteTable('workouts', {
   notes: text('notes'),
   source: text('source').notNull().default('manual'), // manual, apple_health
   apple_health_id: text('apple_health_id'),
+  local_date: text('local_date'), // YYYY-MM-DD in user's local timezone (for date grouping)
   created_at: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 

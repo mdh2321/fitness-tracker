@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { workouts, dailyStrain } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { calculateStrainScore, aggregateDailyStrain } from '@/lib/strain';
+import { PASSIVE_ACTIVITIES } from '@/lib/constants';
 import type { WorkoutType } from '@/lib/constants';
 import type { AppleHealthWorkout } from '@/lib/types';
 
@@ -40,11 +41,15 @@ export async function POST(request: NextRequest) {
       max_heart_rate: w.maxHeartRate,
     });
 
+    // Extract local date from the Apple Health XML timestamp (e.g. "2026-02-23 09:29:00 +1100").
+    // Store real UTC in started_at (for correct time display) and local date in local_date (for grouping).
+    const localDate = localDateString(w.startDate);
+
     await db.insert(workouts).values({
       type: w.type,
       name: w.name,
-      started_at: localDateTimeString(w.startDate),
-      ended_at: localDateTimeString(w.endDate),
+      started_at: new Date(w.startDate).toISOString(),
+      ended_at: new Date(w.endDate).toISOString(),
       duration_minutes: w.duration,
       perceived_effort: estimateRPE(w),
       avg_heart_rate: w.avgHeartRate,
@@ -53,10 +58,11 @@ export async function POST(request: NextRequest) {
       strain_score: strainScore,
       source: 'apple_health',
       apple_health_id: w.sourceId,
+      local_date: localDate,
       created_at: new Date().toISOString(),
     });
 
-    affectedDates.add(localDateTimeString(w.startDate).substring(0, 10));
+    affectedDates.add(localDate);
     imported++;
   }
 
@@ -65,10 +71,11 @@ export async function POST(request: NextRequest) {
     const dayWorkouts = await db
       .select()
       .from(workouts)
-      .where(sql`date(${workouts.started_at}) = ${date}`);
+      .where(eq(workouts.local_date, date));
 
     const strains = dayWorkouts.map((w) => w.strain_score);
     const aggStrain = aggregateDailyStrain(strains);
+    const activeCount = dayWorkouts.filter((w) => !PASSIVE_ACTIVITIES.has(w.name)).length;
 
     // Preserve existing steps — read before insert in case this is a fresh row
     const existingStrain = await db.select().from(dailyStrain).where(eq(dailyStrain.date, date)).get();
@@ -79,7 +86,7 @@ export async function POST(request: NextRequest) {
       .values({
         date,
         strain_score: aggStrain,
-        workout_count: dayWorkouts.length,
+        workout_count: activeCount,
         total_duration: dayWorkouts.reduce((s, w) => s + w.duration_minutes, 0),
         total_volume: 0,
         total_calories: dayWorkouts.reduce((s, w) => s + (w.calories || 0), 0),
@@ -89,7 +96,7 @@ export async function POST(request: NextRequest) {
         target: dailyStrain.date,
         set: {
           strain_score: aggStrain,
-          workout_count: dayWorkouts.length,
+          workout_count: activeCount,
           total_duration: dayWorkouts.reduce((s, w) => s + w.duration_minutes, 0),
           total_calories: dayWorkouts.reduce((s, w) => s + (w.calories || 0), 0),
         },
@@ -99,13 +106,12 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ imported, skipped });
 }
 
-// Extract local datetime from an Apple Health XML timestamp (e.g. "2026-02-23 09:29:00 +1100")
-// and return it as a fake-UTC ISO string (e.g. "2026-02-23T09:29:00.000Z") so that
-// SQLite's date() function returns the user's local date — consistent with manually-entered workouts.
-function localDateTimeString(dateStr: string): string {
+// Extract the local calendar date (YYYY-MM-DD) from an Apple Health XML timestamp
+// (e.g. "2026-02-23 09:29:00 +1100" → "2026-02-23").
+function localDateString(dateStr: string): string {
   const normalised = dateStr.trim().replace(' ', 'T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
-  const match = normalised.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/);
-  return match ? `${match[1]}.000Z` : new Date(dateStr).toISOString();
+  const match = normalised.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : new Date(dateStr).toISOString().substring(0, 10);
 }
 
 function estimateRPE(w: AppleHealthWorkout): number {

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { workouts, dailyStrain, userSettings } from '@/db/schema';
-import { eq, and, gte, sql } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { calculateStrainScore, aggregateDailyStrain } from '@/lib/strain';
-import { APPLE_HEALTH_TYPE_MAP } from '@/lib/constants';
+import { APPLE_HEALTH_TYPE_MAP, PASSIVE_ACTIVITIES } from '@/lib/constants';
 import { format } from 'date-fns';
 import type { WorkoutType } from '@/lib/constants';
 
@@ -104,18 +104,10 @@ function extractKcal(val: unknown): number | null {
 }
 
 async function recalcDailyStrain(date: string) {
-  const dayStart = new Date(`${date}T00:00:00`).toISOString();
-  const dayEnd = new Date(new Date(`${date}T00:00:00`).getTime() + 86400000).toISOString();
-
   const dayWorkouts = await db
     .select()
     .from(workouts)
-    .where(
-      and(
-        gte(workouts.started_at, dayStart),
-        sql`${workouts.started_at} < ${dayEnd}`
-      )
-    );
+    .where(eq(workouts.local_date, date));
 
   if (dayWorkouts.length === 0) return;
 
@@ -125,13 +117,14 @@ async function recalcDailyStrain(date: string) {
   const aggStrain = aggregateDailyStrain(dayWorkouts.map((w) => w.strain_score));
   const totalDuration = dayWorkouts.reduce((s, w) => s + w.duration_minutes, 0);
   const totalCals = dayWorkouts.reduce((s, w) => s + (w.calories ?? 0), 0);
+  const activeCount = dayWorkouts.filter((w) => !PASSIVE_ACTIVITIES.has(w.name)).length;
 
   await db
     .insert(dailyStrain)
     .values({
       date,
       strain_score: aggStrain,
-      workout_count: dayWorkouts.length,
+      workout_count: activeCount,
       total_duration: totalDuration,
       total_volume: 0,
       total_calories: totalCals,
@@ -141,7 +134,7 @@ async function recalcDailyStrain(date: string) {
       target: dailyStrain.date,
       set: {
         strain_score: aggStrain,
-        workout_count: dayWorkouts.length,
+        workout_count: activeCount,
         total_duration: totalDuration,
         total_calories: totalCals,
       },
@@ -203,13 +196,12 @@ export async function POST(request: NextRequest) {
     const startDate = parseFlexibleDate(rawStartStr);
     if (isNaN(startDate.getTime())) { skippedWorkouts++; continue; }
 
-    // Extract local datetime from the Apple Health string (which includes a timezone offset,
-    // e.g. "2026-02-23 09:29:00 +1100"). We store the local time without conversion so that
-    // SQLite's date() function returns the user's local date — consistent with manually-entered
-    // workouts which are submitted by the browser in local time.
+    // Extract the user's local date from the Apple Health string (which includes a timezone offset,
+    // e.g. "2026-02-23 09:29:00 +1100"). Store it as local_date for date-based grouping.
+    // started_at remains real UTC so the browser displays the correct local time.
     const normalisedRaw = rawStartStr.replace(' ', 'T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
-    const localDTMatch = normalisedRaw.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/);
-    const startedAtStored = localDTMatch ? `${localDTMatch[1]}.000Z` : startDate.toISOString();
+    const localDTMatch = normalisedRaw.match(/^(\d{4}-\d{2}-\d{2})/);
+    const localDate = localDTMatch ? localDTMatch[1] : dateKey;
 
     const rawEndStr = (w.end ?? w.endDate ?? '').trim();
     const endDate = rawEndStr ? parseFlexibleDate(rawEndStr) : null;
@@ -251,7 +243,7 @@ export async function POST(request: NextRequest) {
       user_resting_heart_rate: userRestingHR,
     });
 
-    const dateKey = startedAtStored.substring(0, 10);
+    const dateKey = localDate;
 
     // Calories: v1 uses "totalEnergy" or "activeEnergy" (scalar), v2 uses "activeEnergyBurned"
     // AutoExport may send kJ — extractKcal handles unit conversion
@@ -263,8 +255,9 @@ export async function POST(request: NextRequest) {
     await db.insert(workouts).values({
       type: mapping.type,
       name: mapping.name,
-      started_at: startedAtStored,
+      started_at: startDate.toISOString(),
       ended_at: endDate?.toISOString() ?? null,
+      local_date: localDate,
       duration_minutes: durationMinutes,
       perceived_effort: rpe,
       avg_heart_rate: avgHR,

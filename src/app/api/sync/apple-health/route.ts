@@ -201,7 +201,8 @@ export async function POST(request: NextRequest) {
     // started_at remains real UTC so the browser displays the correct local time.
     const normalisedRaw = rawStartStr.replace(' ', 'T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
     const localDTMatch = normalisedRaw.match(/^(\d{4}-\d{2}-\d{2})/);
-    const localDate = localDTMatch ? localDTMatch[1] : dateKey;
+    // Fall back to UTC date from startDate if the raw string can't be parsed
+    const localDate: string = localDTMatch ? localDTMatch[1] : startDate.toISOString().substring(0, 10);
 
     const rawEndStr = (w.end ?? w.endDate ?? '').trim();
     const endDate = rawEndStr ? parseFlexibleDate(rawEndStr) : null;
@@ -243,7 +244,7 @@ export async function POST(request: NextRequest) {
       user_resting_heart_rate: userRestingHR,
     });
 
-    const dateKey = localDate;
+    const dateKey: string = localDate;
 
     // Calories: v1 uses "totalEnergy" or "activeEnergy" (scalar), v2 uses "activeEnergyBurned"
     // AutoExport may send kJ — extractKcal handles unit conversion

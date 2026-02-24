@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Dumbbell, Trophy, Settings } from 'lucide-react';
+import { LayoutDashboard, Dumbbell, Trophy, Settings, UtensilsCrossed } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Home', icon: LayoutDashboard },
   { href: '/workouts', label: 'Workouts', icon: Dumbbell },
+  { href: '/nutrition', label: 'Nutrition', icon: UtensilsCrossed },
   { href: '/achievements', label: 'Badges', icon: Trophy },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];

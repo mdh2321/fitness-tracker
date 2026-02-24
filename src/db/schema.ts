@@ -63,6 +63,22 @@ export const dailyStrain = sqliteTable('daily_strain', {
   steps: integer('steps').notNull().default(0),
 });
 
+export const mealEntries = sqliteTable('meal_entries', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  date: text('date').notNull(),
+  description: text('description').notNull(),
+  order_index: integer('order_index').notNull().default(0),
+  logged_at: text('logged_at').notNull(),
+});
+
+export const dailyNutrition = sqliteTable('daily_nutrition', {
+  date: text('date').primaryKey(),
+  nutrition_score: real('nutrition_score'),
+  ai_summary: text('ai_summary'),
+  scored_at: text('scored_at'),
+  updated_at: text('updated_at').notNull(),
+});
+
 export const achievements = sqliteTable('achievements', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   badge_key: text('badge_key').notNull().unique(),

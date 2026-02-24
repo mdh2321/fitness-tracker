@@ -53,20 +53,23 @@ export async function POST(request: NextRequest) {
   let score: number | null = null;
   let summary: string | null = null;
 
-  try {
-    const result = await scoreNutritionDay(descriptions, date);
-    score = result.score;
-    summary = result.summary;
+  // Only score once 3+ meals have been logged for the day
+  if (descriptions.length >= 3) {
+    try {
+      const result = await scoreNutritionDay(descriptions, date);
+      score = result.score;
+      summary = result.summary;
 
-    await db
-      .insert(dailyNutrition)
-      .values({ date, nutrition_score: score, ai_summary: summary, scored_at: now, updated_at: now })
-      .onConflictDoUpdate({
-        target: dailyNutrition.date,
-        set: { nutrition_score: score, ai_summary: summary, scored_at: now, updated_at: now },
-      });
-  } catch (e) {
-    console.error('AI scoring failed:', e);
+      await db
+        .insert(dailyNutrition)
+        .values({ date, nutrition_score: score, ai_summary: summary, scored_at: now, updated_at: now })
+        .onConflictDoUpdate({
+          target: dailyNutrition.date,
+          set: { nutrition_score: score, ai_summary: summary, scored_at: now, updated_at: now },
+        });
+    } catch (e) {
+      console.error('AI scoring failed:', e);
+    }
   }
 
   return NextResponse.json({ meals: allMeals, score, summary }, { status: 201 });

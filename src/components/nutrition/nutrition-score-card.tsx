@@ -218,8 +218,10 @@ export function NutritionScoreCard({ score, summary, isLoading, isScoring, mealC
           {!isScoring && !summary && !isLoading && (
             <p className="text-sm text-center w-full" style={{ color: 'var(--fg-muted)' }}>
               {mealCount === 0
-                ? 'Log your first meal to get a score.'
-                : 'Score pending…'}
+                ? 'Log your first meal to get started.'
+                : mealCount < 3
+                  ? `Log ${3 - mealCount} more meal${3 - mealCount === 1 ? '' : 's'} to get a score.`
+                  : 'Score pending…'}
             </p>
           )}
         </div>

@@ -119,29 +119,42 @@ export interface BadgeDefinition {
 }
 
 export const BADGES: BadgeDefinition[] = [
-  { key: 'first_workout', name: 'First Step', description: 'Complete your first workout', icon: '🏁', category: 'milestone' },
-  { key: 'ten_workouts', name: 'Getting Started', description: 'Complete 10 workouts', icon: '💪', category: 'milestone' },
-  { key: 'fifty_workouts', name: 'Committed', description: 'Complete 50 workouts', icon: '🔥', category: 'milestone' },
-  { key: 'hundred_workouts', name: 'Centurion', description: 'Complete 100 workouts', icon: '💯', category: 'milestone' },
-  { key: 'streak_3', name: 'Hat Trick', description: '3-day workout streak', icon: '🎯', category: 'streak' },
-  { key: 'streak_7', name: 'Week Warrior', description: '7-day workout streak', icon: '⚡', category: 'streak' },
-  { key: 'streak_14', name: 'Fortnight Force', description: '14-day workout streak', icon: '🌟', category: 'streak' },
-  { key: 'streak_30', name: 'Monthly Machine', description: '30-day workout streak', icon: '👑', category: 'streak' },
-  { key: 'exercise_streak_7', name: 'Consistent Week', description: '7 days in a row with 30+ min exercise', icon: '🗓️', category: 'streak' },
-  { key: 'exercise_streak_14', name: 'Two-Week Titan', description: '14 days in a row with 30+ min exercise', icon: '⏱️', category: 'streak' },
-  { key: 'exercise_streak_30', name: 'Iron Habit', description: '30 days in a row with 30+ min exercise', icon: '🏅', category: 'streak' },
-  { key: 'exercise_streak_60', name: 'Unstoppable', description: '60 days in a row with 30+ min exercise', icon: '💎', category: 'streak' },
-  { key: 'exercise_streak_100', name: 'Century Grind', description: '100 days in a row with 30+ min exercise', icon: '🔱', category: 'streak' },
-  { key: 'strain_15', name: 'Pushing Limits', description: 'Hit a daily strain of 15+', icon: '🔴', category: 'intensity' },
-  { key: 'strain_19', name: 'All Out', description: 'Hit a daily strain of 19+', icon: '💀', category: 'intensity' },
-  { key: 'volume_10k', name: 'Iron Mover', description: 'Lift 10,000 kg total volume in one workout', icon: '🏋️', category: 'volume' },
-  { key: 'volume_50k', name: 'Steel Bender', description: 'Lift 50,000 kg total volume in one workout', icon: '⚙️', category: 'volume' },
-  { key: 'cardio_60', name: 'Endurance Engine', description: '60+ minutes of cardio in one session', icon: '🏃', category: 'volume' },
-  { key: 'five_in_week', name: 'Five-a-Week', description: 'Work out 5 times in a single week', icon: '📅', category: 'consistency' },
-  { key: 'all_types', name: 'Jack of All Trades', description: 'Complete all 5 workout types', icon: '🃏', category: 'variety' },
-  { key: 'early_bird', name: 'Early Bird', description: 'Start a workout before 6 AM', icon: '🌅', category: 'variety' },
-  { key: 'night_owl', name: 'Night Owl', description: 'Start a workout after 9 PM', icon: '🦉', category: 'variety' },
-  { key: 'pr_set', name: 'Personal Best', description: 'Set a personal record on any exercise', icon: '🏆', category: 'milestone' },
+  // Milestones
+  { key: 'first_workout',        name: 'First Step',       description: 'Complete your first workout',               icon: '🏁', category: 'milestone' },
+  { key: 'ten_workouts',         name: 'Getting Started',  description: 'Complete 10 workouts',                      icon: '💪', category: 'milestone' },
+  { key: 'fifty_workouts',       name: 'Committed',        description: 'Complete 50 workouts',                      icon: '🔥', category: 'milestone' },
+  { key: 'hundred_workouts',     name: 'Centurion',        description: 'Complete 100 workouts',                     icon: '💯', category: 'milestone' },
+  { key: 'five_hundred_workouts',name: 'Veteran',          description: 'Complete 500 workouts',                     icon: '🎖️', category: 'milestone' },
+  { key: 'thousand_workouts',    name: 'Legend',           description: 'Complete 1,000 workouts',                   icon: '🏆', category: 'milestone' },
+  { key: 'strength_century',     name: 'Iron Century',     description: 'Complete 100 strength sessions',            icon: '🔩', category: 'milestone' },
+  { key: 'comeback_kid',         name: 'Comeback Kid',     description: 'Log a workout after a 14+ day break',       icon: '🔄', category: 'milestone' },
+  // Streaks
+  { key: 'streak_3',             name: 'Hat Trick',        description: '3-day workout streak',                      icon: '🎯', category: 'streak' },
+  { key: 'streak_7',             name: 'Week Warrior',     description: '7-day workout streak',                      icon: '⚡', category: 'streak' },
+  { key: 'streak_14',            name: 'Fortnight Force',  description: '14-day workout streak',                     icon: '🌟', category: 'streak' },
+  { key: 'streak_30',            name: 'Monthly Machine',  description: '30-day workout streak',                     icon: '👑', category: 'streak' },
+  // Intensity
+  { key: 'strain_15',            name: 'Pushing Limits',   description: 'Hit a daily strain of 15+',                 icon: '🔴', category: 'intensity' },
+  { key: 'strain_19',            name: 'All Out',          description: 'Hit a daily strain of 19+',                 icon: '💀', category: 'intensity' },
+  { key: 'double_peak',          name: 'Double Peak',      description: 'Hit 19+ strain on 2 consecutive days',      icon: '🌋', category: 'intensity' },
+  { key: 'heat_wave',            name: 'Heat Wave',        description: '14 consecutive days with strain of 10+',    icon: '🌡️', category: 'intensity' },
+  // Volume / Cardio
+  { key: 'cardio_60',            name: 'Endurance Engine', description: '60+ minutes of cardio in one session',      icon: '🏃', category: 'volume' },
+  { key: 'run_90',               name: 'Long Runner',      description: '90+ minutes of running in one session',     icon: '🛤️', category: 'volume' },
+  { key: 'run_120',              name: 'Distance Warrior', description: '2 hours of running in one session',         icon: '🗺️', category: 'volume' },
+  { key: 'run_180',              name: 'Ultra Runner',     description: '3 hours of running in one session',         icon: '🦅', category: 'volume' },
+  { key: 'long_haul',            name: 'Long Haul',        description: 'Complete a single workout lasting 3+ hours',icon: '⌛', category: 'volume' },
+  { key: 'step_master',          name: 'Step Master',      description: 'Accumulate 100,000 steps in a single week', icon: '👟', category: 'volume' },
+  // Consistency
+  { key: 'five_in_week',         name: 'Five-a-Week',      description: 'Work out 5 days in a single week',          icon: '📅', category: 'consistency' },
+  { key: 'double_session',       name: 'Double Down',      description: 'Log 2 workouts in a single day',            icon: '✌️', category: 'consistency' },
+  { key: 'weekend_warrior',      name: 'Weekend Warrior',  description: 'Work out both Sat & Sun across 4 weekends', icon: '🗓️', category: 'consistency' },
+  { key: 'no_rest_month',        name: 'No Days Off',      description: 'A full calendar month with no 2 rest days in a row', icon: '📆', category: 'consistency' },
+  { key: 'marathon_month',       name: 'Marathon Month',   description: 'Accumulate 26.2 hours of workouts in one calendar month', icon: '🏅', category: 'consistency' },
+  { key: 'perfect_streak',       name: 'Perfect Streak',   description: 'Hit all 4 weekly goals for 4 consecutive weeks', icon: '💫', category: 'consistency' },
+  // Variety
+  { key: 'early_bird',           name: 'Early Bird',       description: 'Start a workout before 6 AM',               icon: '🌅', category: 'variety' },
+  { key: 'night_owl',            name: 'Night Owl',        description: 'Start a workout after 9 PM',                icon: '🦉', category: 'variety' },
 ];
 
 // Apple Health activity type mapping

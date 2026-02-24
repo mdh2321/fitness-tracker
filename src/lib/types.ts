@@ -93,6 +93,17 @@ export interface StreakInfo {
   lastWorkoutDate: string | null;
 }
 
+export interface WeekResult {
+  weekStart: string; // YYYY-MM-DD (Monday)
+  perfect: boolean;
+}
+
+export interface WeeklyStreakInfo {
+  current: number;
+  longest: number;
+  history: WeekResult[]; // last 12 completed weeks, oldest first
+}
+
 export interface TrendData {
   date: string;
   value: number;

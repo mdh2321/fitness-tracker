@@ -1,15 +1,33 @@
 'use client';
 
+import { useState } from 'react';
 import { useAchievements } from '@/hooks/use-stats';
 import { BadgeCard } from '@/components/achievements/badge-card';
 import { BADGES } from '@/lib/constants';
-import { Trophy } from 'lucide-react';
+import { Trophy, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function AchievementsPage() {
-  const { data: earned, isLoading } = useAchievements();
+  const { data: earned, isLoading, mutate } = useAchievements();
+  const [recalculating, setRecalculating] = useState(false);
 
   const earnedKeys = new Set((earned || []).map((a) => a.badge_key));
   const earnedMap = new Map((earned || []).map((a) => [a.badge_key, a.earned_at]));
+
+  async function handleRecalculate() {
+    setRecalculating(true);
+    try {
+      const res = await fetch('/api/achievements', { method: 'POST' });
+      const data = await res.json();
+      await mutate();
+      const count = data.newBadges?.length ?? 0;
+      toast.success(count > 0 ? `Unlocked ${count} new achievement${count > 1 ? 's' : ''}!` : 'All achievements up to date');
+    } catch {
+      toast.error('Recalculation failed');
+    } finally {
+      setRecalculating(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -27,9 +45,20 @@ export default function AchievementsPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold" style={{ color: 'var(--fg)' }}>Achievements</h1>
-        <span className="text-sm" style={{ color: 'var(--fg-secondary)' }}>
-          {earnedKeys.size} / {BADGES.length} earned
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm" style={{ color: 'var(--fg-secondary)' }}>
+            {earnedKeys.size} / {BADGES.length} earned
+          </span>
+          <button
+            onClick={handleRecalculate}
+            disabled={recalculating}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-50"
+            style={{ color: 'var(--fg-secondary)', borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}
+          >
+            <RefreshCw className={`h-3 w-3 ${recalculating ? 'animate-spin' : ''}`} />
+            {recalculating ? 'Checking…' : 'Recalculate'}
+          </button>
+        </div>
       </div>
 
       {earnedKeys.size === 0 && (

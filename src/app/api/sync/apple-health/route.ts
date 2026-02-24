@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { workouts, dailyStrain, userSettings } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { calculateStrainScore, aggregateDailyStrain } from '@/lib/strain';
+import { evaluateAllAchievements } from '@/lib/achievements';
 import { APPLE_HEALTH_TYPE_MAP, PASSIVE_ACTIVITIES } from '@/lib/constants';
 import { format } from 'date-fns';
 import type { WorkoutType } from '@/lib/constants';
@@ -305,7 +306,7 @@ export async function POST(request: NextRequest) {
         .values(stepRows)
         .onConflictDoUpdate({
           target: dailyStrain.date,
-          set: { steps: sql`excluded.steps` },
+          set: { steps: sql`MAX(excluded.steps, ${dailyStrain.steps})` },
         });
       importedSteps = stepsByDate.size;
     }
@@ -314,6 +315,11 @@ export async function POST(request: NextRequest) {
   // --- Recalculate daily strain for affected workout dates ---
   for (const date of affectedDates) {
     await recalcDailyStrain(date);
+  }
+
+  // --- Evaluate achievements against full history ---
+  if (importedWorkouts > 0) {
+    await evaluateAllAchievements();
   }
 
   return NextResponse.json({

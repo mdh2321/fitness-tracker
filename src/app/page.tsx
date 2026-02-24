@@ -100,7 +100,7 @@ export default function DashboardPage() {
       />
 
       {/* This Week — moved above Streaks */}
-      <WeeklyOverview progress={stats.weeklyProgress} />
+      <WeeklyOverview progress={stats.weeklyProgress} weeklyStreak={stats.weeklyStreak} />
 
       {/* Streaks — uses workout streak (any workout counts), month view */}
       <StreaksCard

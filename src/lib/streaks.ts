@@ -1,5 +1,5 @@
 import { format, subDays, parseISO, differenceInCalendarDays } from 'date-fns';
-import type { StreakInfo } from './types';
+import type { StreakInfo, WeekResult, WeeklyStreakInfo } from './types';
 
 export function calculateStreaks(workoutDates: string[]): StreakInfo {
   if (workoutDates.length === 0) {
@@ -101,4 +101,38 @@ export function calculateExerciseStreak(
   }
 
   return { current, longest: Math.max(longest, current) };
+}
+
+/**
+ * Weekly goal streak: consecutive completed weeks where all 4 goals were met.
+ * `weeks` must be sorted oldest-first. The current in-progress week must be excluded.
+ */
+export function calculateWeeklyGoalStreak(weeks: WeekResult[]): WeeklyStreakInfo {
+  if (weeks.length === 0) {
+    return { current: 0, longest: 0, history: [] };
+  }
+
+  // Current streak: count backwards from the most recent week
+  let current = 0;
+  for (let i = weeks.length - 1; i >= 0; i--) {
+    if (weeks[i].perfect) {
+      current++;
+    } else {
+      break;
+    }
+  }
+
+  // Longest streak
+  let longest = 0;
+  let streak = 0;
+  for (const week of weeks) {
+    if (week.perfect) {
+      streak++;
+      longest = Math.max(longest, streak);
+    } else {
+      streak = 0;
+    }
+  }
+
+  return { current, longest, history: weeks };
 }

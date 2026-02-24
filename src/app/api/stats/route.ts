@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { workouts, dailyStrain, exercises, exerciseSets, userSettings } from '@/db/schema';
 import { desc, eq, sql, gte, and } from 'drizzle-orm';
-import { calculateStreaks } from '@/lib/streaks';
-import { calculateExerciseStreak } from '@/lib/streaks';
+import { calculateStreaks, calculateExerciseStreak, calculateWeeklyGoalStreak } from '@/lib/streaks';
 import { PASSIVE_ACTIVITIES } from '@/lib/constants';
-import { format, subDays, startOfWeek, endOfWeek, parseISO, getDaysInMonth, startOfMonth, addDays } from 'date-fns';
+import { format, subDays, subWeeks, startOfWeek, endOfWeek, parseISO, getDaysInMonth, startOfMonth, addDays } from 'date-fns';
 
 export async function GET(request: NextRequest) {
   // Use client-supplied date to avoid UTC vs local timezone mismatch on Vercel
@@ -73,7 +72,7 @@ export async function GET(request: NextRequest) {
   const uniqueWorkoutDays = new Set(
     weekWorkouts
       .filter((w) => !PASSIVE_ACTIVITIES.has(w.name))
-      .map((w) => format(parseISO(w.started_at), 'yyyy-MM-dd'))
+      .map((w) => w.local_date)
   ).size;
 
   // Weekly steps from daily_strain
@@ -82,6 +81,42 @@ export async function GET(request: NextRequest) {
     .from(dailyStrain)
     .where(and(gte(dailyStrain.date, weekStart), sql`${dailyStrain.date} <= ${weekEnd}`));
   const weeklySteps = weekStrainData.reduce((sum, d) => sum + d.steps, 0);
+
+  // Historical strain data covering 13 weeks back (for 12-week perfect-week history)
+  const thirteenWeeksAgo = format(subWeeks(now, 13), 'yyyy-MM-dd');
+  const historicalStrainData = await db
+    .select()
+    .from(dailyStrain)
+    .where(gte(dailyStrain.date, thirteenWeeksAgo));
+
+  // Build 12-week history: oldest first (i=12 → i=1)
+  const weekHistory = [];
+  for (let i = 12; i >= 1; i--) {
+    const wStart = format(startOfWeek(subWeeks(now, i), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    const wEnd = format(endOfWeek(subWeeks(now, i), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+
+    const wWorkouts = allWorkouts.filter(
+      (w) => (w.local_date ?? '') >= wStart && (w.local_date ?? '') <= wEnd && !PASSIVE_ACTIVITIES.has(w.name)
+    );
+
+    const wUniqueWorkoutDays = new Set(wWorkouts.map((w) => w.local_date)).size;
+    const wCardioMinutes = wWorkouts
+      .filter((w) => CARDIO_ACTIVITIES.has(w.name))
+      .reduce((sum, w) => sum + w.duration_minutes, 0);
+    const wStrengthSessions = wWorkouts.filter((w) => w.type === 'strength').length;
+    const wSteps = historicalStrainData
+      .filter((d) => d.date >= wStart && d.date <= wEnd)
+      .reduce((sum, d) => sum + d.steps, 0);
+
+    const perfect =
+      wUniqueWorkoutDays >= (settings?.weekly_workout_target || 4) &&
+      wCardioMinutes >= (settings?.weekly_cardio_minutes_target || 150) &&
+      wStrengthSessions >= (settings?.weekly_strength_sessions_target || 3) &&
+      wSteps >= (settings?.weekly_steps_target || 70000);
+
+    weekHistory.push({ weekStart: wStart, perfect });
+  }
+  const weeklyStreak = calculateWeeklyGoalStreak(weekHistory);
 
   // Last 7 days strain
   const last7Days = [];
@@ -153,6 +188,7 @@ export async function GET(request: NextRequest) {
         steps: settings?.weekly_steps_target || 70000,
       },
     },
+    weeklyStreak,
     last7Days,
     last7DaysMinutes: (() => {
       const result = [];

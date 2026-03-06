@@ -157,6 +157,41 @@ export const BADGES: BadgeDefinition[] = [
   { key: 'night_owl',            name: 'Night Owl',        description: 'Start a workout after 9 PM',                icon: '🦉', category: 'variety' },
 ];
 
+// Sleep duration color scale (AutoSleep-style)
+export const SLEEP_COLORS = [
+  { min: 0, max: 300, color: '#ff3b5c', label: 'Terrible' },   // < 5h
+  { min: 300, max: 360, color: '#ff6b35', label: 'Poor' },      // 5-6h
+  { min: 360, max: 420, color: '#f59e0b', label: 'Fair' },      // 6-7h
+  { min: 420, max: 480, color: '#00d26a', label: 'Good' },      // 7-8h
+  { min: 480, max: Infinity, color: '#00bcd4', label: 'Excellent' }, // 8h+
+] as const;
+
+export function getSleepColor(minutes: number): string {
+  if (minutes <= 0) return '#161b22';
+  if (minutes < 300) return '#ff3b5c';
+  if (minutes < 360) return '#ff6b35';
+  if (minutes < 420) return '#f59e0b';
+  if (minutes < 480) return '#00d26a';
+  return '#00bcd4';
+}
+
+export function getSleepLabel(minutes: number): string {
+  if (minutes <= 0) return 'No data';
+  if (minutes < 300) return 'Terrible';
+  if (minutes < 360) return 'Poor';
+  if (minutes < 420) return 'Fair';
+  if (minutes < 480) return 'Good';
+  return 'Excellent';
+}
+
+// Sleep stage colors
+export const SLEEP_STAGE_COLORS = {
+  deep: '#8b5cf6',
+  rem: '#00bcd4',
+  light: '#f59e0b',
+  awake: '#ff3b5c',
+} as const;
+
 // Apple Health activity type mapping
 export const APPLE_HEALTH_TYPE_MAP: Record<string, { type: WorkoutType; name: string }> = {
   HKWorkoutActivityTypeRunning: { type: 'cardio', name: 'Running' },

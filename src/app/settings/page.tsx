@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Save, Sun, Moon } from 'lucide-react';
 import { toast } from 'sonner';
+import { ExportCard } from '@/components/settings/export-card';
 
 export default function SettingsPage() {
   const { settings, isLoading, updateSettings } = useSettings();
@@ -144,6 +145,8 @@ export default function SettingsPage() {
           <Save className="mr-2 h-4 w-4" /> Save Settings
         </Button>
       </form>
+
+      <ExportCard />
     </div>
   );
 }

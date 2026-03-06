@@ -1,6 +1,7 @@
 import useSWR from 'swr';
 import { format } from 'date-fns';
 import type { DailyStrain, Achievement } from '@/lib/types';
+import type { BadgeProgress } from '@/lib/achievement-progress';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -14,6 +15,16 @@ export function useStrainData(range = 90) {
   return useSWR<DailyStrain[]>(`/api/strain?range=${range}`, fetcher);
 }
 
+interface AchievementsResponse {
+  earned: Achievement[];
+  progress: BadgeProgress[];
+}
+
 export function useAchievements() {
-  return useSWR<Achievement[]>('/api/achievements', fetcher);
+  const { data, ...rest } = useSWR<AchievementsResponse>('/api/achievements', fetcher);
+  return {
+    ...rest,
+    data: data?.earned,
+    progress: data?.progress,
+  };
 }

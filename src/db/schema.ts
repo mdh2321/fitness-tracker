@@ -11,6 +11,7 @@ export const userSettings = sqliteTable('user_settings', {
   weekly_strength_sessions_target: integer('weekly_strength_sessions_target').notNull().default(3),
   weekly_steps_target: integer('weekly_steps_target').notNull().default(70000),
   theme: text('theme').notNull().default('dark'),
+  dashboard_layout: text('dashboard_layout'),
 });
 
 export const workouts = sqliteTable('workouts', {
@@ -77,6 +78,34 @@ export const dailyNutrition = sqliteTable('daily_nutrition', {
   ai_summary: text('ai_summary'),
   scored_at: text('scored_at'),
   updated_at: text('updated_at').notNull(),
+});
+
+export const sleepSessions = sqliteTable('sleep_sessions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  date: text('date').notNull(),
+  bedtime: text('bedtime'),
+  wake_time: text('wake_time'),
+  duration_minutes: integer('duration_minutes').notNull(),
+  time_in_bed_minutes: integer('time_in_bed_minutes'),
+  deep_minutes: integer('deep_minutes'),
+  rem_minutes: integer('rem_minutes'),
+  light_minutes: integer('light_minutes'),
+  awake_minutes: integer('awake_minutes'),
+  source: text('source').notNull().default('manual'),
+  source_id: text('source_id').unique(),
+  created_at: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const dailySleep = sqliteTable('daily_sleep', {
+  date: text('date').primaryKey(),
+  total_minutes: integer('total_minutes').notNull(),
+  time_in_bed_minutes: integer('time_in_bed_minutes'),
+  deep_minutes: integer('deep_minutes'),
+  rem_minutes: integer('rem_minutes'),
+  light_minutes: integer('light_minutes'),
+  awake_minutes: integer('awake_minutes'),
+  efficiency: real('efficiency'),
+  sessions: integer('sessions').notNull().default(1),
 });
 
 export const achievements = sqliteTable('achievements', {

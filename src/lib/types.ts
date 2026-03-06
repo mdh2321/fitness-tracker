@@ -15,6 +15,7 @@ export interface Workout {
   notes: string | null;
   source: 'manual' | 'apple_health';
   apple_health_id: string | null;
+  local_date: string | null;
   created_at: string;
 }
 
@@ -68,6 +69,7 @@ export interface UserSettings {
   weekly_strength_sessions_target: number;
   weekly_steps_target: number;
   theme: 'light' | 'dark';
+  dashboard_layout: string | null;
 }
 
 export interface WorkoutWithExercises extends Workout {
@@ -107,6 +109,36 @@ export interface WeeklyStreakInfo {
 export interface TrendData {
   date: string;
   value: number;
+}
+
+export interface SleepSession {
+  id: number;
+  date: string;
+  bedtime: string | null;
+  wake_time: string | null;
+  duration_minutes: number;
+  time_in_bed_minutes: number | null;
+  deep_minutes: number | null;
+  rem_minutes: number | null;
+  light_minutes: number | null;
+  awake_minutes: number | null;
+  source: 'manual' | 'auto_export';
+  source_id: string | null;
+  created_at: string;
+}
+
+export interface DailySleep {
+  date: string;
+  total_minutes: number;
+  time_in_bed_minutes: number | null;
+  deep_minutes: number | null;
+  rem_minutes: number | null;
+  light_minutes: number | null;
+  awake_minutes: number | null;
+  efficiency: number | null;
+  sessions: number;
+  bedtime?: string | null;
+  wake_time?: string | null;
 }
 
 export interface AppleHealthWorkout {

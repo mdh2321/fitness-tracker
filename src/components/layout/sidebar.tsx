@@ -11,12 +11,16 @@ import {
   Settings,
   Activity,
   Salad,
+  Moon,
+  CalendarDays,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/workouts', label: 'Workouts', icon: Dumbbell },
   { href: '/nutrition', label: 'Nutrition', icon: Salad },
+  { href: '/sleep', label: 'Sleep', icon: Moon },
+  { href: '/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/achievements', label: 'Achievements', icon: Trophy },
   { href: '/import', label: 'Import', icon: Upload },
   { href: '/settings', label: 'Settings', icon: Settings },

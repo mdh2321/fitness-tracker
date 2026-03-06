@@ -90,7 +90,6 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Today */}
       <TodayCard
         strain={stats.today.strain}
         workouts={stats.today.workouts}
@@ -99,37 +98,33 @@ export default function DashboardPage() {
         steps={stats.today.steps || 0}
       />
 
-      {/* This Week — moved above Streaks */}
       <WeeklyOverview progress={stats.weeklyProgress} weeklyStreak={stats.weeklyStreak} />
 
-      {/* Streaks — uses workout streak (any workout counts), month view */}
       <StreaksCard
         exerciseStreak={stats.exerciseStreak}
         workoutStreak={stats.streaks}
         workoutDates={workoutDates}
       />
 
-      {/* Workouts breakdown — combined, horizontal thin bars, week/month/all tabs */}
       {allWorkouts && allWorkouts.length > 0 && (
         <FitnessSummary workouts={activeWorkouts} />
       )}
 
-      {/* Monthly Strain Rings */}
       <MonthlyStrainRings strainByDate={strainByDate} />
 
       {strainData && strainData.length > 0 && (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle>Activity Heatmap</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <HeatmapCalendar data={strainData} />
-            </CardContent>
-          </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Activity Heatmap</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <HeatmapCalendar data={strainData} />
+          </CardContent>
+        </Card>
+      )}
 
-          <TrendSection strainData={strainData} />
-        </>
+      {strainData && strainData.length > 0 && (
+        <TrendSection strainData={strainData} />
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

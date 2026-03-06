@@ -24,6 +24,7 @@ export async function PUT(request: NextRequest) {
     weekly_strength_sessions_target,
     weekly_steps_target,
     theme,
+    dashboard_layout,
   } = body;
 
   let settings = await db.select().from(userSettings).get();
@@ -44,6 +45,7 @@ export async function PUT(request: NextRequest) {
       weekly_strength_sessions_target: weekly_strength_sessions_target ?? settings.weekly_strength_sessions_target,
       weekly_steps_target: weekly_steps_target ?? settings.weekly_steps_target,
       theme: theme ?? settings.theme,
+      dashboard_layout: dashboard_layout !== undefined ? dashboard_layout : settings.dashboard_layout,
     })
     .where(eq(userSettings.id, settings.id))
     .returning();

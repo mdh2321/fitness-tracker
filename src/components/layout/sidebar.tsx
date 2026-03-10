@@ -33,7 +33,7 @@ export function Sidebar() {
     <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 border-r" style={{ background: 'var(--bg-sidebar)', borderColor: 'var(--border)' }}>
       <div className="flex items-center gap-2 px-6 py-5 border-b" style={{ borderColor: 'var(--border)' }}>
         <Activity className="h-7 w-7 text-[#00d26a]" />
-        <span className="text-xl font-bold tracking-tight" style={{ color: 'var(--fg)' }}>FitTrack</span>
+        <span className="text-xl font-bold tracking-tight" style={{ color: 'var(--fg)' }}>Trace</span>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1">
         {navItems.map((item) => {

@@ -60,7 +60,7 @@ export default function DashboardPage() {
       <div className="max-w-4xl mx-auto">
         <div className="text-center py-20">
           <Activity className="h-16 w-16 text-[#00d26a] mx-auto mb-6" />
-          <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--fg)' }}>Welcome to FitTrack</h1>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--fg)' }}>Welcome to Trace</h1>
           <p className="mb-8 max-w-md mx-auto" style={{ color: 'var(--fg-secondary)' }}>
             Start tracking your workouts to see your strain scores, streaks, and progress over time.
           </p>

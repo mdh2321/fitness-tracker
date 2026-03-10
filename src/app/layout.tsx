@@ -10,7 +10,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'FitTrack',
+  title: 'Trace',
   description: 'Personal fitness tracker',
 };
 

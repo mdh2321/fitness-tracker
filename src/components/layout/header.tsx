@@ -16,7 +16,7 @@ const pageTitles: Record<string, string> = {
 
 export function Header() {
   const pathname = usePathname();
-  const title = pageTitles[pathname] || (pathname.startsWith('/workouts/') ? 'Workout' : 'FitTrack');
+  const title = pageTitles[pathname] || (pathname.startsWith('/workouts/') ? 'Workout' : 'Trace');
   const { theme, setTheme } = useTheme();
 
   return (
@@ -24,7 +24,7 @@ export function Header() {
       <div className="flex items-center justify-between h-14 px-4 lg:px-6">
         <div className="flex items-center gap-2 lg:hidden">
           <Activity className="h-5 w-5 text-[#00d26a]" />
-          <span className="font-bold" style={{ color: 'var(--fg)' }}>FitTrack</span>
+          <span className="font-bold" style={{ color: 'var(--fg)' }}>Trace</span>
         </div>
         <h1 className="hidden lg:block text-lg font-semibold" style={{ color: 'var(--fg)' }}>{title}</h1>
         <div className="flex items-center gap-2">

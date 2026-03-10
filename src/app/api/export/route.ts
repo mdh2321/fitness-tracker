@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
   return new NextResponse(JSON.stringify(exportData, null, 2), {
     headers: {
       'Content-Type': 'application/json',
-      'Content-Disposition': `attachment; filename="trace-export-${formatDate()}.json"`,
+      'Content-Disposition': `attachment; filename="arc-export-${formatDate()}.json"`,
     },
   });
 }
@@ -124,7 +124,7 @@ function exportCSV(tables: Record<string, Record<string, unknown>[]>): NextRespo
   return new NextResponse(zipped as unknown as BodyInit, {
     headers: {
       'Content-Type': 'application/zip',
-      'Content-Disposition': `attachment; filename="trace-export-${formatDate()}.zip"`,
+      'Content-Disposition': `attachment; filename="arc-export-${formatDate()}.zip"`,
     },
   });
 }

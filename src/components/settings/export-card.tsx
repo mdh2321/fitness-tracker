@@ -17,7 +17,7 @@ export function ExportCard() {
       const blob = await res.blob();
       const disposition = res.headers.get('Content-Disposition') || '';
       const match = disposition.match(/filename="(.+)"/);
-      const filename = match?.[1] || `trace-export.${format === 'csv' ? 'zip' : 'json'}`;
+      const filename = match?.[1] || `arc-export.${format === 'csv' ? 'zip' : 'json'}`;
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -28,7 +28,7 @@ export function ExportCard() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      localStorage.setItem('trace-last-export', new Date().toISOString());
+      localStorage.setItem('arc-last-export', new Date().toISOString());
     } catch {
       // silently fail — the download just won't happen
     } finally {
@@ -36,7 +36,7 @@ export function ExportCard() {
     }
   };
 
-  const lastExport = typeof window !== 'undefined' ? localStorage.getItem('trace-last-export') : null;
+  const lastExport = typeof window !== 'undefined' ? localStorage.getItem('arc-last-export') : null;
 
   return (
     <Card>
@@ -45,7 +45,7 @@ export function ExportCard() {
           <Download className="h-5 w-5" />
           Export Data
         </CardTitle>
-        <CardDescription>Download all your Trace data for backup or portability</CardDescription>
+        <CardDescription>Download all your Arc data for backup or portability</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-3">

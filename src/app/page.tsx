@@ -13,7 +13,8 @@ import { HeatmapCalendar } from '@/components/charts/heatmap-calendar';
 import { MonthlyStrainRings } from '@/components/charts/monthly-strain-rings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Activity } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { ArcLogo } from '@/components/ui/arc-logo';
 import { PASSIVE_ACTIVITIES } from '@/lib/constants';
 
 export default function DashboardPage() {
@@ -59,8 +60,8 @@ export default function DashboardPage() {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="text-center py-20">
-          <Activity className="h-16 w-16 text-[#00d26a] mx-auto mb-6" />
-          <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--fg)' }}>Welcome to Trace</h1>
+          <div className="mx-auto mb-6"><ArcLogo size={64} /></div>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--fg)' }}>Welcome to Arc</h1>
           <p className="mb-8 max-w-md mx-auto" style={{ color: 'var(--fg-secondary)' }}>
             Start tracking your workouts to see your strain scores, streaks, and progress over time.
           </p>

@@ -14,7 +14,7 @@ import {
 import { MonthGrid } from '@/components/calendar/month-grid';
 import { DayDetail } from '@/components/calendar/day-detail';
 import { Card } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Footprints } from 'lucide-react';
 import useSWR from 'swr';
 import type { Workout, DailyStrain, DailySleep } from '@/lib/types';
 
@@ -23,6 +23,7 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 export default function CalendarPage() {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [showWalking, setShowWalking] = useState(true);
 
   // Compute date range covering the full calendar grid (may include prev/next month days)
   const { from, to } = useMemo(() => {
@@ -88,14 +89,21 @@ export default function CalendarPage() {
 
   const nutritionScores = nutritionData?.scores ?? {};
 
+  // Filter out walking if toggled off
+  const filteredWorkouts = useMemo(() => {
+    if (!workoutsData) return [];
+    if (showWalking) return workoutsData;
+    return workoutsData.filter((w) => w.name !== 'Walking');
+  }, [workoutsData, showWalking]);
+
   // Filter workouts for the selected day
   const selectedWorkouts = useMemo(() => {
-    if (!workoutsData || !selectedDate) return [];
-    return workoutsData.filter((w) => {
+    if (!selectedDate) return [];
+    return filteredWorkouts.filter((w) => {
       const d = (w as any).local_date || format(new Date(w.started_at), 'yyyy-MM-dd');
       return d === selectedDate;
     });
-  }, [workoutsData, selectedDate]);
+  }, [filteredWorkouts, selectedDate]);
 
   // Get strain for selected day
   const selectedStrain = useMemo(() => {
@@ -137,11 +145,27 @@ export default function CalendarPage() {
                 </button>
               </div>
 
+              {/* Walking toggle */}
+              <div className="flex justify-end mb-2">
+                <button
+                  onClick={() => setShowWalking((v) => !v)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
+                  style={{
+                    background: showWalking ? '#00bcd420' : 'var(--bg-elevated)',
+                    color: showWalking ? '#00bcd4' : 'var(--fg-muted)',
+                    border: `1px solid ${showWalking ? '#00bcd440' : 'var(--border)'}`,
+                  }}
+                >
+                  <Footprints className="h-3.5 w-3.5" />
+                  Walking
+                </button>
+              </div>
+
               <MonthGrid
                 month={month}
                 selectedDate={selectedDate}
                 onSelectDate={setSelectedDate}
-                workouts={workoutsData ?? []}
+                workouts={filteredWorkouts}
                 strainData={strainData ?? []}
                 nutritionScores={nutritionScores}
                 sleepData={sleepData}

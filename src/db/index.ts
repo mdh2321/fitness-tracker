@@ -20,6 +20,20 @@ const client = createClient({ url, authToken });
 
 // Ensure tables created outside Drizzle exist — awaited via initPromise
 const initPromise = (async () => {
+  // Sync log for debugging Health Auto Export payloads
+  await client.execute(`CREATE TABLE IF NOT EXISTS sync_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+  endpoint TEXT NOT NULL,
+  metric_names TEXT,
+  workouts_imported INTEGER NOT NULL DEFAULT 0,
+  steps_imported INTEGER NOT NULL DEFAULT 0,
+  sleep_imported INTEGER NOT NULL DEFAULT 0,
+  error TEXT,
+  payload_snippet TEXT,
+  ip TEXT
+)`);
+
   await client.execute(`CREATE TABLE IF NOT EXISTS weekly_reports (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   week_start TEXT NOT NULL UNIQUE,
@@ -101,6 +115,10 @@ const initPromise = (async () => {
   for (const col of xpColumns) {
     await client.execute(`ALTER TABLE user_xp ADD COLUMN ${col.name} ${col.type}`).catch(() => {});
   }
+
+  // Theme and dashboard_layout columns on user_settings
+  await client.execute(`ALTER TABLE user_settings ADD COLUMN theme TEXT NOT NULL DEFAULT 'dark'`).catch(() => {});
+  await client.execute(`ALTER TABLE user_settings ADD COLUMN dashboard_layout TEXT`).catch(() => {});
 
   // Accent color columns on user_settings
   const accentColumns = [

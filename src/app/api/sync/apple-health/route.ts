@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
+import { db, rawClient, dbReady } from '@/db';
 import { workouts, dailyStrain, userSettings, sleepSessions, dailySleep } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { calculateStrainScore, aggregateDailyStrain } from '@/lib/strain';
@@ -7,6 +7,28 @@ import { evaluateAllAchievements } from '@/lib/achievements';
 import { APPLE_HEALTH_TYPE_MAP, PASSIVE_ACTIVITIES } from '@/lib/constants';
 import { format } from 'date-fns';
 import type { WorkoutType } from '@/lib/constants';
+
+// Normalize metric names to handle variations from Health Auto Export
+function normalizeMetricName(name: string): string {
+  const n = name.toLowerCase().replace(/[\s_-]+/g, '');
+  if (n.includes('sleep') && (n.includes('analysis') || n.includes('analys'))) return 'sleep_analysis';
+  if (n === 'sleep') return 'sleep_analysis';
+  if (n.includes('step') && n.includes('count')) return 'step_count';
+  if (n === 'steps' || n === 'stepcount') return 'step_count';
+  return name;
+}
+
+async function logSync(endpoint: string, metricNames: string[], results: { workouts: number; steps: number; sleep: number }, error: string | null, payloadSnippet: string) {
+  try {
+    await dbReady;
+    await rawClient.execute({
+      sql: `INSERT INTO sync_log (endpoint, metric_names, workouts_imported, steps_imported, sleep_imported, error, payload_snippet) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      args: [endpoint, metricNames.join(','), results.workouts, results.steps, results.sleep, error, payloadSnippet.slice(0, 4000)],
+    });
+  } catch (e) {
+    console.error('[Sync Log] Failed to write log:', e);
+  }
+}
 
 // Health Auto Export sends workout type as a human-readable "name" field
 const SHORTCUTS_TYPE_MAP: Record<string, { type: WorkoutType; name: string }> = {
@@ -168,6 +190,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
+  // Capture raw payload snippet for sync log
+  const rawPayloadSnippet = JSON.stringify(body).slice(0, 4000);
+  const receivedMetricNames: string[] = [];
+
   // Health Auto Export wraps everything under body.data
   const data = body?.data ?? body;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -175,6 +201,14 @@ export async function POST(request: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const incomingMetrics: any[] = data?.metrics ?? [];
 
+  // Log all metric names received for debugging
+  for (const m of incomingMetrics) {
+    if (m?.name) receivedMetricNames.push(m.name);
+  }
+  if (incomingWorkouts.length > 0) receivedMetricNames.push(`workouts(${incomingWorkouts.length})`);
+
+  console.log('[Apple Health Sync] Received metrics:', receivedMetricNames.join(', ') || 'none');
+  console.log('[Apple Health Sync] Payload keys:', Object.keys(data ?? {}));
 
   const settings = await db.select().from(userSettings).get();
   const userMaxHR = settings?.max_heart_rate ?? 190;
@@ -283,10 +317,10 @@ export async function POST(request: NextRequest) {
     importedWorkouts++;
   }
 
-  // --- Steps (in metrics array, metric name "step_count") ---
+  // --- Steps (in metrics array, metric name "step_count" or variations) ---
   let importedSteps = 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const stepMetric = incomingMetrics.find((m: any) => m.name === 'step_count');
+  const stepMetric = incomingMetrics.find((m: any) => normalizeMetricName(m.name ?? '') === 'step_count');
   if (stepMetric?.data) {
     // Build step rows, deduplicated by date (keep the last entry per date)
     const stepsByDate = new Map<string, number>();
@@ -320,10 +354,10 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // --- Sleep (in metrics array, metric name "sleep_analysis") ---
+  // --- Sleep (in metrics array, metric name "sleep_analysis" or variations) ---
   let importedSleep = 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sleepMetric = incomingMetrics.find((m: any) => m.name === 'sleep_analysis');
+  const sleepMetric = incomingMetrics.find((m: any) => normalizeMetricName(m.name ?? '') === 'sleep_analysis');
   if (sleepMetric?.data) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const entry of sleepMetric.data as any[]) {
@@ -438,13 +472,18 @@ export async function POST(request: NextRequest) {
     await evaluateAllAchievements();
   }
 
+  const result = {
+    workouts: importedWorkouts,
+    skipped: skippedWorkouts,
+    steps: importedSteps,
+    sleep: importedSleep,
+  };
+
+  // Log this sync attempt
+  await logSync('/api/sync/apple-health', receivedMetricNames, { workouts: importedWorkouts, steps: importedSteps, sleep: importedSleep }, null, rawPayloadSnippet);
+
   return NextResponse.json({
-    imported: {
-      workouts: importedWorkouts,
-      skipped: skippedWorkouts,
-      steps: importedSteps,
-      sleep: importedSleep,
-    },
+    imported: result,
     message: `Synced ${importedWorkouts} workout(s), ${importedSteps} day(s) of steps, ${importedSleep} sleep session(s)`,
   });
 }

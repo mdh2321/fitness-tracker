@@ -18,16 +18,16 @@ export function SetupCard() {
           <ol className="list-decimal list-inside space-y-2" style={{ color: 'var(--fg-muted)' }}>
             <li>Install <strong style={{ color: 'var(--fg-secondary)' }}>Health Auto Export</strong> from the App Store</li>
             <li>
-              Set up a REST API automation:
+              Create a <strong style={{ color: 'var(--fg-secondary)' }}>single REST API automation</strong> for all data:
               <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
-                <li>URL: <code className="px-1.5 py-0.5 rounded text-xs" style={{ background: 'var(--bg-elevated)', color: '#00bcd4' }}>https://your-domain/api/sleep/sync</code></li>
+                <li>URL: <code className="px-1.5 py-0.5 rounded text-xs" style={{ background: 'var(--bg-elevated)', color: '#00bcd4' }}>https://your-domain/api/sync/apple-health</code></li>
                 <li>Method: <strong>POST</strong></li>
                 <li>Header: <code className="px-1.5 py-0.5 rounded text-xs" style={{ background: 'var(--bg-elevated)', color: '#00bcd4' }}>x-api-key: YOUR_SYNC_API_KEY</code></li>
               </ul>
             </li>
-            <li>Select <strong style={{ color: 'var(--fg-secondary)' }}>Sleep Analysis</strong> as the data source</li>
-            <li>Choose aggregate mode with fields: totalSleep, core, deep, rem, sleepStart, sleepEnd, inBed</li>
-            <li>Set frequency to daily</li>
+            <li>Select data sources: <strong style={{ color: 'var(--fg-secondary)' }}>Workouts</strong>, <strong style={{ color: 'var(--fg-secondary)' }}>Step Count</strong>, <strong style={{ color: 'var(--fg-secondary)' }}>Sleep Analysis</strong></li>
+            <li>For Sleep: aggregate mode with fields: totalSleep, core, deep, rem, sleepStart, sleepEnd, inBed, awake</li>
+            <li>Set frequency to <strong style={{ color: 'var(--fg-secondary)' }}>every 1 hour</strong> (or more frequent)</li>
           </ol>
 
           <p className="text-xs" style={{ color: 'var(--fg-muted)' }}>

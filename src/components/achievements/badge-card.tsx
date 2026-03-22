@@ -12,11 +12,22 @@ interface BadgeCardProps {
   compact?: boolean;
 }
 
+const MINUTES_BADGES = new Set(['sleep_8h_avg_week', 'sleep_7h_avg_month']);
+
+function formatProgress(key: string, current: number, target: number): string {
+  if (MINUTES_BADGES.has(key)) {
+    const cHrs = (current / 60).toFixed(1);
+    const tHrs = (target / 60).toFixed(0);
+    return `${cHrs}h / ${tHrs}h`;
+  }
+  return `${current} / ${target}`;
+}
+
 export function BadgeCard({ badgeKey, earnedAt, locked = false, progress, compact = false }: BadgeCardProps) {
   const badge = BADGES.find((b) => b.key === badgeKey);
   if (!badge) return null;
 
-  const pct = progress ? Math.round((progress.current / progress.target) * 100) : 0;
+  const pct = progress ? Math.min(Math.round((progress.current / progress.target) * 100), 100) : 0;
 
   if (compact) {
     return (
@@ -29,11 +40,11 @@ export function BadgeCard({ badgeKey, earnedAt, locked = false, progress, compac
               <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
                 <div
                   className="h-full rounded-full transition-all"
-                  style={{ width: `${pct}%`, background: '#00d26a' }}
+                  style={{ width: `${pct}%`, background: 'var(--accent)' }}
                 />
               </div>
               <span className="text-[10px] tabular-nums whitespace-nowrap" style={{ color: 'var(--fg-muted)' }}>
-                {progress.current}/{progress.target}
+                {formatProgress(badgeKey, progress.current, progress.target)}
               </span>
             </div>
           )}
@@ -58,11 +69,11 @@ export function BadgeCard({ badgeKey, earnedAt, locked = false, progress, compac
             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
               <div
                 className="h-full rounded-full transition-all"
-                style={{ width: `${pct}%`, background: '#00d26a' }}
+                style={{ width: `${pct}%`, background: 'var(--accent)' }}
               />
             </div>
             <p className="text-[10px] mt-1 tabular-nums" style={{ color: 'var(--fg-muted)' }}>
-              {progress.current} / {progress.target}
+              {formatProgress(badgeKey, progress.current, progress.target)}
             </p>
           </div>
         )}

@@ -7,12 +7,14 @@ import { ArcLogo } from '@/components/ui/arc-logo';
 import {
   LayoutDashboard,
   Dumbbell,
-  Trophy,
+  Target,
   Upload,
   Settings,
   Salad,
   Moon,
   CalendarDays,
+  FileText,
+  User,
 } from 'lucide-react';
 
 const navItems = [
@@ -21,7 +23,9 @@ const navItems = [
   { href: '/nutrition', label: 'Nutrition', icon: Salad },
   { href: '/sleep', label: 'Sleep', icon: Moon },
   { href: '/calendar', label: 'Calendar', icon: CalendarDays },
-  { href: '/achievements', label: 'Achievements', icon: Trophy },
+  { href: '/reports', label: 'Reports', icon: FileText },
+  { href: '/quests', label: 'Quests', icon: Target },
+  { href: '/profile', label: 'Profile', icon: User },
   { href: '/import', label: 'Import', icon: Upload },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
@@ -31,7 +35,7 @@ export function Sidebar() {
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 border-r" style={{ background: 'var(--bg-sidebar)', borderColor: 'var(--border)' }}>
-      <div className="flex items-center gap-2 px-6 py-5 border-b" style={{ borderColor: 'var(--border)' }}>
+      <div className="flex items-center gap-2 px-6 h-14 border-b" style={{ borderColor: 'var(--border)' }}>
         <ArcLogo size={28} />
         <span className="text-xl font-bold tracking-tight" style={{ color: 'var(--fg)' }}>Arc</span>
       </div>
@@ -45,7 +49,7 @@ export function Sidebar() {
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-[#00d26a]/10 text-[#00d26a]'
+                  ? 'bg-[var(--accent)]/10 text-[var(--accent)]'
                   : 'hover:bg-[var(--bg-elevated)]'
               )}
               style={isActive ? {} : { color: 'var(--fg-muted)' }}

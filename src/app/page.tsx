@@ -6,6 +6,7 @@ import { useStats, useStrainData } from '@/hooks/use-stats';
 import { useWorkouts } from '@/hooks/use-workouts';
 import { TodayCard } from '@/components/dashboard/today-card';
 import { StreaksCard } from '@/components/dashboard/streaks-card';
+import { WorkoutCalendarCard } from '@/components/dashboard/workout-calendar-card';
 import { WeeklyOverview } from '@/components/dashboard/weekly-overview';
 import { FitnessSummary } from '@/components/dashboard/fitness-summary';
 import { TrendSection } from '@/components/dashboard/trend-section';
@@ -14,6 +15,7 @@ import { MonthlyStrainRings } from '@/components/charts/monthly-strain-rings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+
 import { ArcLogo } from '@/components/ui/arc-logo';
 import { PASSIVE_ACTIVITIES } from '@/lib/constants';
 
@@ -102,10 +104,18 @@ export default function DashboardPage() {
       <WeeklyOverview progress={stats.weeklyProgress} weeklyStreak={stats.weeklyStreak} />
 
       <StreaksCard
-        exerciseStreak={stats.exerciseStreak}
         workoutStreak={stats.streaks}
+        exerciseStreak={stats.exerciseStreak}
+        sleepStreak={stats.sleepStreak}
+        nutritionStreak={stats.nutritionStreak}
         workoutDates={workoutDates}
+        exerciseQualifyingDates={stats.exerciseQualifyingDates || []}
+        sleepQualifyingDates={stats.sleepQualifyingDates || []}
+        nutritionQualifyingDates={stats.nutritionQualifyingDates || []}
+        dailyTargets={stats.dailyTargets}
       />
+
+      <WorkoutCalendarCard workoutDates={workoutDates} />
 
       {allWorkouts && allWorkouts.length > 0 && (
         <FitnessSummary workouts={activeWorkouts} />

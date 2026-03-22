@@ -53,15 +53,16 @@ export interface ExerciseStreakInfo {
 }
 
 export function calculateExerciseStreak(
-  dailyMinutes: { date: string; totalMinutes: number }[]
+  dailyMinutes: { date: string; totalMinutes: number }[],
+  threshold: number = 30
 ): ExerciseStreakInfo {
   if (dailyMinutes.length === 0) {
     return { current: 0, longest: 0 };
   }
 
-  // Filter to qualifying days (>= 30 min), sorted descending
+  // Filter to qualifying days (>= threshold min), sorted descending
   const qualifying = dailyMinutes
-    .filter((d) => d.totalMinutes >= 30)
+    .filter((d) => d.totalMinutes >= threshold)
     .map((d) => d.date)
     .sort()
     .reverse();

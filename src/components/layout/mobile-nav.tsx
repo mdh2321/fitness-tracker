@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Dumbbell, Trophy, Settings, UtensilsCrossed, Moon, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, Dumbbell, Target, Settings, UtensilsCrossed, Moon, CalendarDays, FileText, User } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Home', icon: LayoutDashboard },
@@ -11,7 +11,9 @@ const navItems = [
   { href: '/nutrition', label: 'Nutrition', icon: UtensilsCrossed },
   { href: '/sleep', label: 'Sleep', icon: Moon },
   { href: '/calendar', label: 'Calendar', icon: CalendarDays },
-  { href: '/achievements', label: 'Badges', icon: Trophy },
+  { href: '/reports', label: 'Reports', icon: FileText },
+  { href: '/quests', label: 'Quests', icon: Target },
+  { href: '/profile', label: 'Profile', icon: User },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -29,7 +31,7 @@ export function MobileNav() {
               href={item.href}
               className={cn(
                 'flex flex-col items-center gap-1 py-2 px-3 text-xs transition-colors',
-                isActive ? 'text-[#00d26a]' : ''
+                isActive ? 'text-[var(--accent)]' : ''
               )}
               style={isActive ? {} : { color: 'var(--fg-muted)' }}
             >

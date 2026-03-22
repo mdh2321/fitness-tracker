@@ -22,7 +22,7 @@ export function WeeklyOverview({ progress, weeklyStreak }: WeeklyOverviewProps) 
             value={progress.workouts}
             target={progress.targets.workouts}
             label="Workouts"
-            color="#00d26a"
+            color="var(--accent)"
           />
           <TargetRing
             value={progress.cardioMinutes}
@@ -49,7 +49,7 @@ export function WeeklyOverview({ progress, weeklyStreak }: WeeklyOverviewProps) 
         <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-1.5">
-              <Trophy className="h-3.5 w-3.5" style={{ color: '#00d26a' }} />
+              <Trophy className="h-3.5 w-3.5" style={{ color: 'var(--accent)' }} />
               <span className="text-sm" style={{ color: 'var(--fg-secondary)' }}>Perfect weeks</span>
             </div>
             <span className="text-sm font-bold" style={{ color: 'var(--fg)' }}>
@@ -69,7 +69,7 @@ export function WeeklyOverview({ progress, weeklyStreak }: WeeklyOverviewProps) 
                     key={week.weekStart}
                     title={`Week of ${week.weekStart}`}
                     className="h-3.5 rounded-sm"
-                    style={{ background: week.perfect ? '#00d26a' : 'var(--bg-elevated)' }}
+                    style={{ background: week.perfect ? 'var(--accent)' : 'var(--bg-elevated)' }}
                   />
                 ))}
               </div>

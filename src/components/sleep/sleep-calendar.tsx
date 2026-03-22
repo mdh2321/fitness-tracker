@@ -134,7 +134,7 @@ export function SleepCalendar({ data, onSelectDate }: SleepCalendarProps) {
                   className="text-[9px] font-bold tabular-nums mt-0.5"
                   style={{ color: 'rgba(255,255,255,0.85)' }}
                 >
-                  {Math.round(day.minutes / 60 * 10) / 10}h
+                  {formatDuration(day.minutes)}
                 </span>
               )}
             </button>

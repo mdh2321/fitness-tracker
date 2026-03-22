@@ -115,7 +115,7 @@ export interface BadgeDefinition {
   name: string;
   description: string;
   icon: string;
-  category: 'milestone' | 'streak' | 'intensity' | 'volume' | 'consistency' | 'variety';
+  category: 'milestone' | 'streak' | 'intensity' | 'volume' | 'consistency' | 'variety' | 'sleep' | 'nutrition';
 }
 
 export const BADGES: BadgeDefinition[] = [
@@ -155,7 +155,81 @@ export const BADGES: BadgeDefinition[] = [
   // Variety
   { key: 'early_bird',           name: 'Early Bird',       description: 'Start a workout before 6 AM',               icon: '🌅', category: 'variety' },
   { key: 'night_owl',            name: 'Night Owl',        description: 'Start a workout after 9 PM',                icon: '🦉', category: 'variety' },
+  // Sleep
+  { key: 'sleep_7_streak_7',     name: 'Sleep Scholar',    description: '7+ hours of sleep for 7 consecutive nights', icon: '😴', category: 'sleep' },
+  { key: 'sleep_7h_avg_month',   name: 'Dream Machine',    description: 'Average 7+ hours of sleep for a calendar month', icon: '🌙', category: 'sleep' },
+  { key: 'sleep_8h_avg_week',    name: 'Well Rested',      description: 'Average 8+ hours of sleep across a full week', icon: '💤', category: 'sleep' },
+  // Nutrition
+  { key: 'nutrition_streak_7',   name: 'Clean Eater',      description: 'Score 14+ nutrition for 7 consecutive days', icon: '🥗', category: 'nutrition' },
+  { key: 'nutrition_14_avg_month', name: 'Nutrition Master', description: 'Average 14+ nutrition score for a calendar month', icon: '🏅', category: 'nutrition' },
+  { key: 'nutrition_perfect',    name: 'Perfect Plate',    description: 'Score a perfect 21/21 nutrition day',        icon: '🍽️', category: 'nutrition' },
 ];
+
+// Accent colors unlockable by level
+export interface AccentColor {
+  name: string;
+  hex: string;
+  level: number;
+  gradient?: string; // for special animated gradient
+}
+
+export const ACCENT_COLORS: AccentColor[] = [
+  { name: 'Arc Green',      hex: '#00d26a', level: 1 },
+  { name: 'Ocean Teal',     hex: '#00bcd4', level: 1 },
+  { name: 'Electric Blue',  hex: '#3b82f6', level: 1 },
+  { name: 'Sunset Orange',  hex: '#ff6b35', level: 1 },
+  { name: 'Hot Pink',       hex: '#ec4899', level: 1 },
+  { name: 'Royal Purple',   hex: '#8b5cf6', level: 1 },
+  { name: 'Crimson',        hex: '#ef4444', level: 1 },
+  { name: 'Gold',           hex: '#eab308', level: 1 },
+  { name: 'Prismatic',      hex: '#00d26a', level: 1, gradient: 'linear-gradient(135deg, #00d26a, #3b82f6, #8b5cf6, #ec4899, #eab308)' },
+];
+
+export function getUnlockedColors(level: number): AccentColor[] {
+  return ACCENT_COLORS.filter((c) => c.level <= level);
+}
+
+export function getNewUnlocksForLevel(level: number): AccentColor[] {
+  return ACCENT_COLORS.filter((c) => c.level === level);
+}
+
+// Level definitions with icons and accent colors
+export interface LevelDefinition {
+  level: number;
+  title: string;
+  icon: string;
+  color: string; // theme color for this level
+}
+
+export const LEVEL_DEFINITIONS: LevelDefinition[] = [
+  { level: 1,  title: 'Rookie',        icon: '🌱', color: '#00d26a' },
+  { level: 2,  title: 'Mover',         icon: '👟', color: '#00d26a' },
+  { level: 3,  title: 'Challenger',    icon: '🔥', color: '#00bcd4' },
+  { level: 4,  title: 'Contender',     icon: '⚡', color: '#00bcd4' },
+  { level: 5,  title: 'Athlete',       icon: '🏔️', color: '#3b82f6' },
+  { level: 6,  title: 'Warrior',       icon: '⚔️', color: '#ff6b35' },
+  { level: 7,  title: 'Champion',      icon: '🏆', color: '#ec4899' },
+  { level: 8,  title: 'Titan',         icon: '🔱', color: '#8b5cf6' },
+  { level: 9,  title: 'Legend',        icon: '👑', color: '#ef4444' },
+  { level: 10, title: 'Transcendent',  icon: '✦',  color: '#eab308' },
+];
+
+export function getLevelDefinition(level: number): LevelDefinition {
+  // Find highest matching level definition
+  const clamped = Math.min(level, 10);
+  return LEVEL_DEFINITIONS.find(d => d.level === clamped) ?? LEVEL_DEFINITIONS[0];
+}
+
+// Streak shield unlock levels
+export const SHIELD_UNLOCK_LEVELS = [5, 10, 15, 20];
+
+// XP multiplier tiers
+export function getXpMultiplier(coreStreakWeeks: number): number {
+  if (coreStreakWeeks >= 8) return 1.5;
+  if (coreStreakWeeks >= 4) return 1.25;
+  if (coreStreakWeeks >= 2) return 1.1;
+  return 1.0;
+}
 
 // Sleep duration color scale (AutoSleep-style)
 export const SLEEP_COLORS = [

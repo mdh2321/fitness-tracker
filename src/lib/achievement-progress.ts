@@ -1,10 +1,10 @@
 import { db } from '@/db';
-import { workouts, dailyStrain, userSettings } from '@/db/schema';
+import { workouts, dailyStrain, dailySleep, dailyNutrition, userSettings } from '@/db/schema';
 import { PASSIVE_ACTIVITIES } from './constants';
 import { calculateStreaks } from './streaks';
 import {
   format, parseISO, startOfWeek, endOfWeek,
-  differenceInCalendarDays, subWeeks,
+  differenceInCalendarDays, getDaysInMonth, subWeeks,
 } from 'date-fns';
 
 export interface BadgeProgress {
@@ -109,6 +109,110 @@ export async function computeAllProgress(): Promise<BadgeProgress[]> {
     }
   }
 
+  // ── Sleep progress ───────────────────────────────────────────────────────────
+  const allSleepData = await db.select({
+    date: dailySleep.date, total_minutes: dailySleep.total_minutes,
+  }).from(dailySleep);
+  const sortedSleep = [...allSleepData].sort((a, b) => a.date.localeCompare(b.date));
+
+  // Current sleep streak (7+ hours, consecutive nights ending today/yesterday)
+  let liveSleepStreak = 0;
+  if (sortedSleep.length > 0) {
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const yesterdayStr = format(new Date(Date.now() - 86400000), 'yyyy-MM-dd');
+    for (let i = sortedSleep.length - 1; i >= 0; i--) {
+      const d = sortedSleep[i];
+      if (d.total_minutes < 420) break;
+      if (i === sortedSleep.length - 1) {
+        if (d.date !== todayStr && d.date !== yesterdayStr) break;
+        liveSleepStreak = 1;
+      } else {
+        if (differenceInCalendarDays(parseISO(sortedSleep[i + 1].date), parseISO(d.date)) !== 1) break;
+        liveSleepStreak++;
+      }
+    }
+  }
+
+  // Best weekly sleep average (hours)
+  const sleepByWeek: Record<string, number[]> = {};
+  for (const s of sortedSleep) {
+    const wk = format(startOfWeek(parseISO(s.date), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    if (!sleepByWeek[wk]) sleepByWeek[wk] = [];
+    sleepByWeek[wk].push(s.total_minutes);
+  }
+  let bestWeekAvgSleepMin = 0;
+  for (const mins of Object.values(sleepByWeek)) {
+    if (mins.length >= 7) {
+      const avg = mins.reduce((a, b) => a + b, 0) / mins.length;
+      bestWeekAvgSleepMin = Math.max(bestWeekAvgSleepMin, avg);
+    }
+  }
+
+  // Best monthly sleep average (hours)
+  const sleepByMonth: Record<string, number[]> = {};
+  for (const s of sortedSleep) {
+    const month = s.date.slice(0, 7);
+    if (!sleepByMonth[month]) sleepByMonth[month] = [];
+    sleepByMonth[month].push(s.total_minutes);
+  }
+  let bestMonthAvgSleepMin = 0;
+  let bestMonthSleepCoverage = 0;
+  for (const [month, mins] of Object.entries(sleepByMonth)) {
+    const dim = getDaysInMonth(parseISO(`${month}-01`));
+    if (mins.length >= dim * 0.8) {
+      const avg = mins.reduce((a, b) => a + b, 0) / mins.length;
+      if (avg > bestMonthAvgSleepMin) {
+        bestMonthAvgSleepMin = avg;
+        bestMonthSleepCoverage = mins.length / dim;
+      }
+    }
+  }
+
+  // ── Nutrition progress ──────────────────────────────────────────────────────
+  const allNutritionData = await db.select({
+    date: dailyNutrition.date, nutrition_score: dailyNutrition.nutrition_score,
+  }).from(dailyNutrition);
+  const sortedNutrition = allNutritionData
+    .filter((d) => d.nutrition_score !== null)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Current nutrition streak (14+, consecutive days)
+  let liveNutStreak = 0;
+  if (sortedNutrition.length > 0) {
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const yesterdayStr = format(new Date(Date.now() - 86400000), 'yyyy-MM-dd');
+    for (let i = sortedNutrition.length - 1; i >= 0; i--) {
+      const d = sortedNutrition[i];
+      if (d.nutrition_score! < 14) break;
+      if (i === sortedNutrition.length - 1) {
+        if (d.date !== todayStr && d.date !== yesterdayStr) break;
+        liveNutStreak = 1;
+      } else {
+        if (differenceInCalendarDays(parseISO(sortedNutrition[i + 1].date), parseISO(d.date)) !== 1) break;
+        liveNutStreak++;
+      }
+    }
+  }
+
+  // Best nutrition score (for perfect plate)
+  const bestNutScore = sortedNutrition.reduce((max, d) => Math.max(max, d.nutrition_score!), 0);
+
+  // Best monthly nutrition average
+  const nutByMonth: Record<string, number[]> = {};
+  for (const d of sortedNutrition) {
+    const month = d.date.slice(0, 7);
+    if (!nutByMonth[month]) nutByMonth[month] = [];
+    nutByMonth[month].push(d.nutrition_score!);
+  }
+  let bestMonthAvgNut = 0;
+  for (const [month, scores] of Object.entries(nutByMonth)) {
+    const dim = getDaysInMonth(parseISO(`${month}-01`));
+    if (scores.length >= dim * 0.8) {
+      const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+      bestMonthAvgNut = Math.max(bestMonthAvgNut, avg);
+    }
+  }
+
   return [
     // Milestones
     { badge_key: 'first_workout', current: Math.min(totalCount, 1), target: 1 },
@@ -129,5 +233,12 @@ export async function computeAllProgress(): Promise<BadgeProgress[]> {
     { badge_key: 'five_in_week', current: Math.min(bestWeekDays, 5), target: 5 },
     { badge_key: 'weekend_warrior', current: Math.min(fullWeekends, 4), target: 4 },
     { badge_key: 'perfect_streak', current: Math.min(consecutivePerfect, 4), target: 4 },
+    // Sleep
+    { badge_key: 'sleep_7_streak_7', current: Math.min(liveSleepStreak, 7), target: 7 },
+    { badge_key: 'sleep_8h_avg_week', current: Math.round(bestWeekAvgSleepMin), target: 480 },
+    { badge_key: 'sleep_7h_avg_month', current: Math.round(bestMonthAvgSleepMin), target: 420 },
+    // Nutrition
+    { badge_key: 'nutrition_streak_7', current: Math.min(liveNutStreak, 7), target: 7 },
+    { badge_key: 'nutrition_14_avg_month', current: Math.round(bestMonthAvgNut * 10) / 10, target: 14 },
   ];
 }

@@ -8,9 +8,10 @@ interface TrendLineProps {
   data: { date: string; value: number }[];
   color?: string;
   label?: string;
+  formatter?: (value: number) => string;
 }
 
-export function TrendLine({ data, color = '#00d26a', label = 'Value' }: TrendLineProps) {
+export function TrendLine({ data, color = '#00d26a', label = 'Value', formatter }: TrendLineProps) {
   const { theme } = useTheme();
   const ct = {
     tick: theme === 'light' ? '#71717a' : '#6b7280',
@@ -49,7 +50,7 @@ export function TrendLine({ data, color = '#00d26a', label = 'Value' }: TrendLin
             color: ct.tooltipColor,
             fontSize: '12px',
           }}
-          formatter={(value: unknown) => [Number(value).toFixed(1), label]}
+          formatter={(value: unknown) => [formatter ? formatter(Number(value)) : Number(value).toFixed(1), label]}
         />
         <Area
           type="monotone"

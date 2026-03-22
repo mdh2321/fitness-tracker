@@ -12,6 +12,8 @@ import {
   isSameDay,
 } from 'date-fns';
 import { DayCell, type DayCellData } from './day-cell';
+import { getWorkoutColor } from '@/lib/constants';
+import { getWorkoutIcon } from './workout-icons';
 import type { Workout, DailyStrain } from '@/lib/types';
 
 interface MonthGridProps {
@@ -45,11 +47,11 @@ export function MonthGrid({
 
     // Build lookup maps
     const strainMap = new Map(strainData.map((d) => [d.date, d]));
-    const workoutsByDate = new Map<string, { name: string; type: string }[]>();
+    const workoutsByDate = new Map<string, { name: string; type: string; duration_minutes: number }[]>();
     for (const w of workouts) {
       const d = w.local_date || format(new Date(w.started_at), 'yyyy-MM-dd');
       if (!workoutsByDate.has(d)) workoutsByDate.set(d, []);
-      workoutsByDate.get(d)!.push({ name: w.name, type: w.type });
+      workoutsByDate.get(d)!.push({ name: w.name, type: w.type, duration_minutes: w.duration_minutes });
     }
 
     const result: DayCellData[] = [];
@@ -70,6 +72,17 @@ export function MonthGrid({
     }
     return result;
   }, [month, workouts, strainData, nutritionScores, sleepData, today]);
+
+  // Build color key from workouts that actually appear this month
+  const workoutKey = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const w of workouts) {
+      if (!seen.has(w.name)) {
+        seen.set(w.name, getWorkoutColor(w.name, w.type as any));
+      }
+    }
+    return Array.from(seen.entries()).map(([name, color]) => ({ name, color }));
+  }, [workouts]);
 
   return (
     <div>
@@ -93,6 +106,26 @@ export function MonthGrid({
           />
         ))}
       </div>
+
+      {/* Workout icon key */}
+      {workoutKey.length > 0 && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
+          {workoutKey.map(({ name, color }) => {
+            const Icon = getWorkoutIcon(name);
+            return (
+              <div key={name} className="flex items-center gap-1.5">
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ background: `${color}20` }}
+                >
+                  <Icon className="w-2.5 h-2.5" style={{ color }} />
+                </div>
+                <span className="text-[10px] font-medium" style={{ color: 'var(--fg-muted)' }}>{name}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

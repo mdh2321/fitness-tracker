@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { workouts, dailyStrain, exercises, exerciseSets, userSettings } from '@/db/schema';
+import { workouts, dailyStrain, exercises, exerciseSets, userSettings, dailySleep, dailyNutrition } from '@/db/schema';
 import { desc, eq, sql, gte, and } from 'drizzle-orm';
 import { calculateStreaks, calculateExerciseStreak, calculateWeeklyGoalStreak } from '@/lib/streaks';
+import { calculateSleepStreak, calculateNutritionStreak } from '@/lib/streaks-extended';
 import { PASSIVE_ACTIVITIES } from '@/lib/constants';
 import { format, subDays, subWeeks, startOfWeek, endOfWeek, parseISO, getDaysInMonth, startOfMonth, addDays } from 'date-fns';
 
@@ -48,9 +49,9 @@ export async function GET(request: NextRequest) {
 
   const streaks = calculateStreaks(activeWorkouts.map((w) => w.local_date ?? w.started_at));
 
-  // Exercise streak (30 min/day) — excludes passive activities
+  // Active time streak (30 min/day) — includes all workouts (walking counts)
   const dailyMinutesMap: Record<string, number> = {};
-  for (const w of activeWorkouts) {
+  for (const w of allWorkouts) {
     const d = w.local_date ?? format(parseISO(w.started_at), 'yyyy-MM-dd');
     dailyMinutesMap[d] = (dailyMinutesMap[d] || 0) + w.duration_minutes;
   }
@@ -58,10 +59,17 @@ export async function GET(request: NextRequest) {
     date,
     totalMinutes,
   }));
-  const exerciseStreak = calculateExerciseStreak(dailyMinutes);
-
-  // Settings for targets
+  // Settings for targets (fetched early so we can use for streaks)
   const settings = await db.select().from(userSettings).get();
+  const dailyTargets = {
+    activeMinutes: settings?.daily_active_minutes_target ?? 30,
+    sleepMinutes: settings?.daily_sleep_minutes_target ?? 420,
+    nutritionScore: settings?.daily_nutrition_score_target ?? 14,
+    steps: settings?.daily_steps_target ?? 10000,
+    strain: settings?.daily_strain_target ?? 10,
+  };
+
+  const exerciseStreak = calculateExerciseStreak(dailyMinutes, dailyTargets.activeMinutes);
 
   // Weekly progress
   const CARDIO_ACTIVITIES = new Set(['Running', 'Cycling', 'Swimming', 'Rowing', 'HIIT']);
@@ -164,6 +172,46 @@ export async function GET(request: NextRequest) {
   const totalCalories = allStrainData.reduce((s, d) => s + d.total_calories, 0);
   const totalDuration = activeWorkouts.reduce((s, w) => s + w.duration_minutes, 0);
 
+  // Sleep and nutrition data for today's card + streaks
+  const todaySleep = await db
+    .select()
+    .from(dailySleep)
+    .where(eq(dailySleep.date, today))
+    .get();
+
+  const todayNutrition = await db
+    .select()
+    .from(dailyNutrition)
+    .where(eq(dailyNutrition.date, today))
+    .get();
+
+  // All sleep/nutrition data for streak calculation
+  const allSleepData = await db
+    .select({ date: dailySleep.date, total_minutes: dailySleep.total_minutes })
+    .from(dailySleep);
+  const allNutritionData = await db
+    .select({ date: dailyNutrition.date, nutrition_score: dailyNutrition.nutrition_score })
+    .from(dailyNutrition);
+
+  const sleepStreak = calculateSleepStreak(allSleepData, dailyTargets.sleepMinutes);
+  const nutritionStreak = calculateNutritionStreak(allNutritionData, dailyTargets.nutritionScore);
+
+  // Build sets of qualifying dates for streak calendar display (using user targets)
+  const sleepQualifyingDates = allSleepData
+    .filter((d) => d.total_minutes >= dailyTargets.sleepMinutes)
+    .map((d) => d.date);
+  const nutritionQualifyingDates = allNutritionData
+    .filter((d) => d.nutrition_score !== null && d.nutrition_score >= dailyTargets.nutritionScore)
+    .map((d) => d.date);
+  const exerciseQualifyingDates = dailyMinutes
+    .filter((d) => d.totalMinutes >= dailyTargets.activeMinutes)
+    .map((d) => d.date);
+
+  const metrics = {
+    sleepHours: todaySleep ? Math.round((todaySleep.total_minutes / 60) * 10) / 10 : null,
+    nutritionScore: todayNutrition?.nutrition_score ?? null,
+  };
+
   return NextResponse.json({
     today: {
       strain: todayStrain?.strain_score || 0,
@@ -198,7 +246,8 @@ export async function GET(request: NextRequest) {
       }
       return result;
     })(),
-    streakThreshold: 30,
+    streakThreshold: dailyTargets.activeMinutes,
+    dailyTargets,
     averages: {
       strain: Math.round(avgStrain * 10) / 10,
       volume: Math.round(avgVolume),
@@ -209,5 +258,11 @@ export async function GET(request: NextRequest) {
       duration: totalDuration,
     },
     activeWorkoutDates: [...new Set(activeWorkouts.map((w) => w.started_at.slice(0, 10)))],
+    sleepStreak,
+    nutritionStreak,
+    sleepQualifyingDates,
+    nutritionQualifyingDates,
+    exerciseQualifyingDates,
+    metrics,
   });
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { workouts, dailyStrain, userSettings } from '@/db/schema';
+import { workouts, dailyStrain, userSettings, sleepSessions, dailySleep } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { calculateStrainScore, aggregateDailyStrain } from '@/lib/strain';
 import { evaluateAllAchievements } from '@/lib/achievements';
@@ -75,6 +75,14 @@ function parseFlexibleDate(dateStr: string): Date {
   const d = new Date(normalised);
   if (!isNaN(d.getTime())) return d;
   return new Date(dateStr);
+}
+
+// Extract local date (YYYY-MM-DD) from a date string, respecting its timezone offset
+// e.g. "2026-03-11 08:47:33 +1100" → "2026-03-11" (not UTC "2026-03-10")
+function extractLocalDate(dateStr: string): string {
+  const match = dateStr.trim().match(/^(\d{4}-\d{2}-\d{2})/);
+  if (match) return match[1];
+  return parseFlexibleDate(dateStr).toISOString().split('T')[0];
 }
 
 // Extract a plain number from a Health Auto Export qty object or plain number
@@ -312,6 +320,114 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // --- Sleep (in metrics array, metric name "sleep_analysis") ---
+  let importedSleep = 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sleepMetric = incomingMetrics.find((m: any) => m.name === 'sleep_analysis');
+  if (sleepMetric?.data) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const entry of sleepMetric.data as any[]) {
+      // Auto Export sends sleep values in hours
+      // Use totalSleep if asleep is 0 or missing
+      const sleepHours = (entry.asleep || entry.totalSleep);
+      if (!sleepHours) continue;
+
+      const totalMinutes = Math.round(sleepHours * 60);
+
+      if (totalMinutes <= 0) continue;
+
+      const toMin = (val: number | null | undefined): number | null => {
+        if (val == null || val === 0) return null;
+        return Math.round(val * 60); // All values are in hours
+      };
+
+      const deepMinutes = toMin(entry.deep);
+      const remMinutes = toMin(entry.rem);
+      const lightMinutes = toMin(entry.core);
+      const timeInBedMinutes = toMin(entry.inBed);
+      const awakeMinutes = toMin(entry.awake);
+
+
+      // Determine date from sleepEnd, inBedEnd, or date field
+      // Use local date from timezone offset (not UTC) to match AEDT
+      const sleepEnd = entry.sleepEnd || entry.inBedEnd;
+      let date: string;
+      if (sleepEnd) {
+        date = extractLocalDate(sleepEnd);
+      } else if (entry.date) {
+        date = extractLocalDate(entry.date);
+      } else {
+        continue;
+      }
+
+      const sourceId = `auto_export_${date}`;
+
+      // Upsert sleep session
+      const existingSleep = await db.select().from(sleepSessions).where(eq(sleepSessions.source_id, sourceId)).get();
+
+      const sleepData = {
+        date,
+        bedtime: entry.sleepStart || entry.inBedStart || null,
+        wake_time: sleepEnd || null,
+        duration_minutes: totalMinutes,
+        time_in_bed_minutes: timeInBedMinutes,
+        deep_minutes: deepMinutes,
+        rem_minutes: remMinutes,
+        light_minutes: lightMinutes,
+        awake_minutes: awakeMinutes,
+      };
+
+      if (existingSleep) {
+        await db.update(sleepSessions).set(sleepData).where(eq(sleepSessions.source_id, sourceId));
+      } else {
+        await db.insert(sleepSessions).values({
+          ...sleepData,
+          source: 'auto_export',
+          source_id: sourceId,
+        });
+      }
+
+      // Recalculate daily_sleep
+      const sessions = await db.select().from(sleepSessions).where(eq(sleepSessions.date, date));
+      const totalMins = sessions.reduce((s, r) => s + r.duration_minutes, 0);
+      const totalInBed = sessions.reduce((s, r) => s + (r.time_in_bed_minutes ?? 0), 0);
+      const totalDeep = sessions.reduce((s, r) => s + (r.deep_minutes ?? 0), 0);
+      const totalRem = sessions.reduce((s, r) => s + (r.rem_minutes ?? 0), 0);
+      const totalLight = sessions.reduce((s, r) => s + (r.light_minutes ?? 0), 0);
+      const totalAwake = sessions.reduce((s, r) => s + (r.awake_minutes ?? 0), 0);
+      const efficiency = totalInBed > 0 ? Math.round((totalMins / totalInBed) * 1000) / 10 : null;
+
+      await db
+        .insert(dailySleep)
+        .values({
+          date,
+          total_minutes: totalMins,
+          time_in_bed_minutes: totalInBed || null,
+          deep_minutes: totalDeep || null,
+          rem_minutes: totalRem || null,
+          light_minutes: totalLight || null,
+          awake_minutes: totalAwake || null,
+          efficiency,
+          sessions: sessions.length,
+        })
+        .onConflictDoUpdate({
+          target: dailySleep.date,
+          set: {
+            total_minutes: totalMins,
+            time_in_bed_minutes: totalInBed || null,
+            deep_minutes: totalDeep || null,
+            rem_minutes: totalRem || null,
+            light_minutes: totalLight || null,
+            awake_minutes: totalAwake || null,
+            efficiency,
+            sessions: sessions.length,
+          },
+        });
+
+      importedSleep++;
+    }
+  }
+
   // --- Recalculate daily strain for affected workout dates ---
   for (const date of affectedDates) {
     await recalcDailyStrain(date);
@@ -327,7 +443,8 @@ export async function POST(request: NextRequest) {
       workouts: importedWorkouts,
       skipped: skippedWorkouts,
       steps: importedSteps,
+      sleep: importedSleep,
     },
-    message: `Synced ${importedWorkouts} workout(s), ${importedSteps} day(s) of steps`,
+    message: `Synced ${importedWorkouts} workout(s), ${importedSteps} day(s) of steps, ${importedSleep} sleep session(s)`,
   });
 }

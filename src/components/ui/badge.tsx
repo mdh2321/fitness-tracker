@@ -7,12 +7,12 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border-transparent bg-[#00d26a]/20 text-[#00d26a]',
+        default: 'border-transparent bg-[var(--accent)]/20 text-[var(--accent)]',
         secondary: 'border-transparent bg-[#1a1a24] text-gray-300',
         destructive: 'border-transparent bg-[#ff3b5c]/20 text-[#ff3b5c]',
         outline: 'border-[#2a2a35] text-gray-300',
         strength: 'border-transparent bg-[#8b5cf6]/20 text-[#8b5cf6]',
-        cardio: 'border-transparent bg-[#00d26a]/20 text-[#00d26a]',
+        cardio: 'border-transparent bg-[var(--accent)]/20 text-[var(--accent)]',
         mixed: 'border-transparent bg-[#00bcd4]/20 text-[#00bcd4]',
         flexibility: 'border-transparent bg-[#ff6b35]/20 text-[#ff6b35]',
         sport: 'border-transparent bg-[#ff3b5c]/20 text-[#ff3b5c]',

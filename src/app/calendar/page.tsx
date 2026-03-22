@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   format,
   startOfMonth,
@@ -9,33 +9,48 @@ import {
   endOfWeek,
   addMonths,
   subMonths,
+  addWeeks,
+  subWeeks,
   isFuture,
 } from 'date-fns';
 import { MonthGrid } from '@/components/calendar/month-grid';
+import { WeekGrid } from '@/components/calendar/week-grid';
 import { DayDetail } from '@/components/calendar/day-detail';
 import { Card } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, Footprints } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import useSWR from 'swr';
 import type { Workout, DailyStrain, DailySleep } from '@/lib/types';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-export default function CalendarPage() {
-  const [month, setMonth] = useState(() => startOfMonth(new Date()));
-  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-  const [showWalking, setShowWalking] = useState(true);
+type ViewMode = 'month' | 'week';
 
-  // Compute date range covering the full calendar grid (may include prev/next month days)
+export default function CalendarPage() {
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const [month, setMonth] = useState(() => startOfMonth(new Date()));
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+
+  // Compute date range based on view mode
   const { from, to } = useMemo(() => {
+    if (viewMode === 'week') {
+      const ws = startOfWeek(weekStart, { weekStartsOn: 1 });
+      const we = endOfWeek(ws, { weekStartsOn: 1 });
+      return {
+        from: format(ws, 'yyyy-MM-dd'),
+        to: format(we, 'yyyy-MM-dd'),
+      };
+    }
+    // month and list both use the full month range
     const monthStart = startOfMonth(month);
     const monthEnd = endOfMonth(month);
     return {
       from: format(startOfWeek(monthStart, { weekStartsOn: 1 }), 'yyyy-MM-dd'),
       to: format(endOfWeek(monthEnd, { weekStartsOn: 1 }), 'yyyy-MM-dd'),
     };
-  }, [month]);
+  }, [viewMode, month, weekStart]);
 
-  // Fetch workouts for the month range
+  // Fetch workouts for the range
   const { data: workoutsData } = useSWR<Workout[]>(
     `/api/workouts?from=${from}T00:00:00&to=${to}T23:59:59&limit=500`,
     fetcher
@@ -47,7 +62,7 @@ export default function CalendarPage() {
     fetcher
   );
 
-  // Collect all dates in the grid for nutrition score fetch
+  // Collect all dates in the range for nutrition score fetch
   const allDates = useMemo(() => {
     const dates: string[] = [];
     const start = new Date(from);
@@ -81,7 +96,7 @@ export default function CalendarPage() {
     return map;
   }, [sleepHistoryData]);
 
-  // Fetch sleep for selected date
+  // Fetch sleep detail for selected date (for stage breakdown)
   const { data: selectedDaySleep } = useSWR<{ daily: DailySleep | null }>(
     selectedDate ? `/api/sleep?date=${selectedDate}` : null,
     fetcher
@@ -89,12 +104,11 @@ export default function CalendarPage() {
 
   const nutritionScores = nutritionData?.scores ?? {};
 
-  // Filter out walking if toggled off
+  // Filter out walking
   const filteredWorkouts = useMemo(() => {
     if (!workoutsData) return [];
-    if (showWalking) return workoutsData;
     return workoutsData.filter((w) => w.name !== 'Walking');
-  }, [workoutsData, showWalking]);
+  }, [workoutsData]);
 
   // Filter workouts for the selected day
   const selectedWorkouts = useMemo(() => {
@@ -112,31 +126,48 @@ export default function CalendarPage() {
     return day?.strain_score ?? 0;
   }, [strainData, selectedDate]);
 
-  const canGoForward = !isFuture(addMonths(month, 1));
+  // Navigation
+  const navigateBack = () => {
+    if (viewMode === 'week') setWeekStart((w) => subWeeks(w, 1));
+    else setMonth((m) => subMonths(m, 1));
+  };
+
+  const navigateForward = () => {
+    if (viewMode === 'week') setWeekStart((w) => addWeeks(w, 1));
+    else setMonth((m) => addMonths(m, 1));
+  };
+
+  const canGoForward = viewMode === 'week'
+    ? !isFuture(addWeeks(weekStart, 1))
+    : !isFuture(addMonths(month, 1));
+
+  const headerLabel = viewMode === 'week'
+    ? `${format(startOfWeek(weekStart, { weekStartsOn: 1 }), 'MMM d')} – ${format(endOfWeek(weekStart, { weekStartsOn: 1 }), 'MMM d, yyyy')}`
+    : format(month, 'MMMM yyyy');
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold" style={{ color: 'var(--fg)' }}>Calendar</h1>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Month grid */}
+        {/* Main grid */}
         <div className="flex-1">
           <Card>
             <div className="p-4">
-              {/* Month navigation */}
+              {/* Navigation + view toggle */}
               <div className="flex items-center justify-between mb-4">
                 <button
-                  onClick={() => setMonth((m) => subMonths(m, 1))}
+                  onClick={navigateBack}
                   className="p-1.5 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors"
                   style={{ color: 'var(--fg-secondary)' }}
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <h2 className="text-lg font-semibold" style={{ color: 'var(--fg)' }}>
-                  {format(month, 'MMMM yyyy')}
+                  {headerLabel}
                 </h2>
                 <button
-                  onClick={() => canGoForward && setMonth((m) => addMonths(m, 1))}
+                  onClick={navigateForward}
                   disabled={!canGoForward}
                   className="p-1.5 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors disabled:opacity-30"
                   style={{ color: 'var(--fg-secondary)' }}
@@ -145,31 +176,53 @@ export default function CalendarPage() {
                 </button>
               </div>
 
-              {/* Walking toggle */}
-              <div className="flex justify-end mb-2">
-                <button
-                  onClick={() => setShowWalking((v) => !v)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
-                  style={{
-                    background: showWalking ? '#00bcd420' : 'var(--bg-elevated)',
-                    color: showWalking ? '#00bcd4' : 'var(--fg-muted)',
-                    border: `1px solid ${showWalking ? '#00bcd440' : 'var(--border)'}`,
-                  }}
+              {/* View mode toggle */}
+              <div className="flex items-center justify-center mb-3">
+                <div
+                  className="flex rounded-lg overflow-hidden"
+                  style={{ border: '1px solid var(--border)' }}
                 >
-                  <Footprints className="h-3.5 w-3.5" />
-                  Walking
-                </button>
+                  {(['month', 'week'] as ViewMode[]).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setViewMode(mode)}
+                      className="px-3 py-1 text-xs font-medium transition-colors capitalize"
+                      style={{
+                        background: viewMode === mode ? 'var(--bg-elevated)' : 'transparent',
+                        color: viewMode === mode ? 'var(--fg)' : 'var(--fg-muted)',
+                      }}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <MonthGrid
-                month={month}
-                selectedDate={selectedDate}
-                onSelectDate={setSelectedDate}
-                workouts={filteredWorkouts}
-                strainData={strainData ?? []}
-                nutritionScores={nutritionScores}
-                sleepData={sleepData}
-              />
+              {/* View content */}
+              {viewMode === 'month' && (
+                <MonthGrid
+                  month={month}
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                  workouts={filteredWorkouts}
+                  strainData={strainData ?? []}
+                  nutritionScores={nutritionScores}
+                  sleepData={sleepData}
+                />
+              )}
+
+              {viewMode === 'week' && (
+                <WeekGrid
+                  weekStart={weekStart}
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                  workouts={filteredWorkouts}
+                  strainData={strainData ?? []}
+                  nutritionScores={nutritionScores}
+                  sleepData={sleepData}
+                />
+              )}
+
             </div>
           </Card>
         </div>
@@ -184,6 +237,7 @@ export default function CalendarPage() {
                 strain={selectedStrain}
                 nutritionScore={nutritionScores[selectedDate] ?? null}
                 sleepMinutes={selectedDaySleep?.daily?.total_minutes ?? null}
+                sleepDetail={selectedDaySleep?.daily ?? null}
               />
             </div>
           </Card>

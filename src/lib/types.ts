@@ -49,6 +49,8 @@ export interface DailyStrain {
   total_volume: number;
   total_calories: number;
   steps: number;
+  avg_hr?: number | null;
+  max_hr?: number | null;
 }
 
 export interface Achievement {
@@ -68,8 +70,16 @@ export interface UserSettings {
   weekly_cardio_minutes_target: number;
   weekly_strength_sessions_target: number;
   weekly_steps_target: number;
+  daily_active_minutes_target: number;
+  daily_sleep_minutes_target: number;
+  daily_nutrition_score_target: number;
+  daily_steps_target: number;
+  daily_strain_target: number;
   theme: 'light' | 'dark';
   dashboard_layout: string | null;
+  accent_color: string;
+  unlocked_colors: string;
+  pinned_badges: string;
 }
 
 export interface WorkoutWithExercises extends Workout {
@@ -139,6 +149,19 @@ export interface DailySleep {
   sessions: number;
   bedtime?: string | null;
   wake_time?: string | null;
+}
+
+export interface MetricCardData {
+  value: number | null;
+  previousValue: number | null;
+}
+
+export interface DashboardMetrics {
+  strain: MetricCardData;
+  sleepScore: MetricCardData;
+  nutritionScore: MetricCardData;
+  restingHr: { value: number };
+  steps: MetricCardData;
 }
 
 export interface AppleHealthWorkout {

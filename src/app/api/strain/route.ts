@@ -50,8 +50,26 @@ export async function GET(request: NextRequest) {
     )
     .groupBy(workouts.local_date);
 
+  // Heart rate aggregates per day (weighted avg HR by duration, max HR)
+  const hrRows = await db
+    .select({
+      date: workouts.local_date,
+      avg_hr: sql<number>`cast(sum(${workouts.avg_heart_rate} * ${workouts.duration_minutes}) as real) / sum(case when ${workouts.avg_heart_rate} is not null then ${workouts.duration_minutes} else 0 end)`,
+      max_hr: sql<number>`max(${workouts.max_heart_rate})`,
+    })
+    .from(workouts)
+    .where(
+      and(
+        sql`${workouts.local_date} >= ${from}`,
+        sql`${workouts.local_date} <= ${to}`,
+        sql`${workouts.avg_heart_rate} is not null`
+      )
+    )
+    .groupBy(workouts.local_date);
+
   const activeMap = new Map(activeWorkoutRows.map((r) => [r.date, r]));
   const allMap = new Map(allWorkoutRows.map((r) => [r.date, r.total]));
+  const hrMap = new Map(hrRows.map((r) => [r.date, { avg_hr: Math.round(r.avg_hr), max_hr: r.max_hr }]));
 
   return NextResponse.json(
     data.map((d) => ({
@@ -59,6 +77,8 @@ export async function GET(request: NextRequest) {
       workout_count: activeMap.get(d.date)?.count ?? 0,
       workout_duration: activeMap.get(d.date)?.total ?? 0,
       total_duration: allMap.get(d.date) ?? d.total_duration,
+      avg_hr: hrMap.get(d.date)?.avg_hr ?? null,
+      max_hr: hrMap.get(d.date)?.max_hr ?? null,
     }))
   );
 }

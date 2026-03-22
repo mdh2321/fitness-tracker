@@ -10,8 +10,16 @@ export const userSettings = sqliteTable('user_settings', {
   weekly_cardio_minutes_target: integer('weekly_cardio_minutes_target').notNull().default(150),
   weekly_strength_sessions_target: integer('weekly_strength_sessions_target').notNull().default(3),
   weekly_steps_target: integer('weekly_steps_target').notNull().default(70000),
+  daily_active_minutes_target: integer('daily_active_minutes_target').notNull().default(30),
+  daily_sleep_minutes_target: integer('daily_sleep_minutes_target').notNull().default(420),
+  daily_nutrition_score_target: integer('daily_nutrition_score_target').notNull().default(14),
+  daily_steps_target: integer('daily_steps_target').notNull().default(10000),
+  daily_strain_target: real('daily_strain_target').notNull().default(10),
   theme: text('theme').notNull().default('dark'),
   dashboard_layout: text('dashboard_layout'),
+  accent_color: text('accent_color').notNull().default('#00d26a'),
+  unlocked_colors: text('unlocked_colors').notNull().default('["#00d26a"]'),
+  pinned_badges: text('pinned_badges').notNull().default('[]'),
 });
 
 export const workouts = sqliteTable('workouts', {
@@ -107,6 +115,8 @@ export const dailySleep = sqliteTable('daily_sleep', {
   efficiency: real('efficiency'),
   sessions: integer('sessions').notNull().default(1),
 });
+
+// weekly_reports table created via direct SQL — queried with raw SQL in /api/reports
 
 export const achievements = sqliteTable('achievements', {
   id: integer('id').primaryKey({ autoIncrement: true }),

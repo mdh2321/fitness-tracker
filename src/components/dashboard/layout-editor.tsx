@@ -97,7 +97,7 @@ export function LayoutEditor({ layout, onSave, onClose }: LayoutEditorProps) {
                 className="p-1.5 rounded hover:bg-[var(--bg-hover)]"
               >
                 {item.visible
-                  ? <Eye className="h-4 w-4 text-[#00d26a]" />
+                  ? <Eye className="h-4 w-4 text-[var(--accent)]" />
                   : <EyeOff className="h-4 w-4" style={{ color: 'var(--fg-muted)' }} />
                 }
               </button>

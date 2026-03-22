@@ -21,10 +21,30 @@ interface SleepTrendsProps {
   data: DailySleep[];
 }
 
-function timeToDecimal(iso: string): number {
-  const date = new Date(iso);
+// Parse Auto Export date strings like "2026-03-06 01:07:31 +1100"
+function parseFlexibleDate(dateStr: string): Date {
+  const normalized = dateStr.trim().replace(' ', 'T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+  const d = new Date(normalized);
+  if (!isNaN(d.getTime())) return d;
+  return new Date(dateStr);
+}
+
+function timeToDecimal(dateStr: string): number {
+  const date = parseFlexibleDate(dateStr);
+  // Extract hours/minutes in the original timezone by parsing the offset
+  const offsetMatch = dateStr.trim().match(/([+-])(\d{2}):?(\d{2})$/);
+  if (offsetMatch) {
+    const sign = offsetMatch[1] === '+' ? 1 : -1;
+    const offsetH = parseInt(offsetMatch[2]);
+    const offsetM = parseInt(offsetMatch[3]);
+    const totalOffsetMs = sign * (offsetH * 60 + offsetM) * 60000;
+    const localMs = date.getTime() + totalOffsetMs;
+    const localDate = new Date(localMs);
+    let hours = localDate.getUTCHours() + localDate.getUTCMinutes() / 60;
+    if (hours < 12) hours += 24;
+    return Math.round(hours * 10) / 10;
+  }
   let hours = date.getHours() + date.getMinutes() / 60;
-  // For bedtime, shift times before noon to be > 24 (e.g. 11pm = 23, 1am = 25)
   if (hours < 12) hours += 24;
   return Math.round(hours * 10) / 10;
 }
@@ -36,6 +56,12 @@ function decimalToTimeLabel(decimal: number): string {
   const ampm = h >= 12 ? 'PM' : 'AM';
   const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+}
+
+function formatHoursToHrMin(hours: number): string {
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
 export function SleepTrends({ data }: SleepTrendsProps) {
@@ -57,7 +83,11 @@ export function SleepTrends({ data }: SleepTrendsProps) {
   const dailyData = useMemo(() => ({
     total: data.map((d) => ({ date: d.date, value: Math.round((d.total_minutes / 60) * 10) / 10 })),
     bedtime: data.filter((d) => d.bedtime).map((d) => ({ date: d.date, value: timeToDecimal(d.bedtime!) })),
-    waketime: data.filter((d) => d.wake_time).map((d) => ({ date: d.date, value: timeToDecimal(d.wake_time!) - (timeToDecimal(d.wake_time!) >= 24 ? 24 : 0) })),
+    waketime: data.filter((d) => d.wake_time).map((d) => {
+      let val = timeToDecimal(d.wake_time!);
+      if (val >= 24) val -= 24;
+      return { date: d.date, value: val };
+    }),
   }), [data]);
 
   const weeklyData = useMemo(() => {
@@ -156,8 +186,8 @@ export function SleepTrends({ data }: SleepTrendsProps) {
   const sourceData = period === 'daily' ? dailyData : period === 'weekly' ? weeklyData : monthlyData;
   const chartData = sourceData[metric];
 
-  const metricConfig: Record<Metric, { color: string; label: string; formatter?: (v: number) => string }> = {
-    total: { color: '#00bcd4', label: 'Sleep (hours)' },
+  const metricConfig: Record<Metric, { color: string; label: string; formatter: (v: number) => string }> = {
+    total: { color: '#00bcd4', label: 'Sleep', formatter: formatHoursToHrMin },
     bedtime: { color: '#8b5cf6', label: 'Bed Time', formatter: decimalToTimeLabel },
     waketime: { color: '#f59e0b', label: 'Wake Time', formatter: decimalToTimeLabel },
   };
@@ -219,9 +249,9 @@ export function SleepTrends({ data }: SleepTrendsProps) {
         {chartData.length === 0 ? (
           <p className="text-sm py-8 text-center" style={{ color: 'var(--fg-muted)' }}>No sleep data yet</p>
         ) : chartType === 'line' ? (
-          <TrendLine data={chartData} color={config.color} label={config.label} />
+          <TrendLine data={chartData} color={config.color} label={config.label} formatter={config.formatter} />
         ) : (
-          <TrendBar data={chartData} color={config.color} label={config.label} period={period} />
+          <TrendBar data={chartData} color={config.color} label={config.label} period={period} formatter={config.formatter} />
         )}
       </CardContent>
     </Card>

@@ -23,8 +23,15 @@ export async function PUT(request: NextRequest) {
     weekly_cardio_minutes_target,
     weekly_strength_sessions_target,
     weekly_steps_target,
+    daily_active_minutes_target,
+    daily_sleep_minutes_target,
+    daily_nutrition_score_target,
+    daily_steps_target,
+    daily_strain_target,
     theme,
     dashboard_layout,
+    accent_color,
+    pinned_badges,
   } = body;
 
   let settings = await db.select().from(userSettings).get();
@@ -44,8 +51,15 @@ export async function PUT(request: NextRequest) {
       weekly_cardio_minutes_target: weekly_cardio_minutes_target ?? settings.weekly_cardio_minutes_target,
       weekly_strength_sessions_target: weekly_strength_sessions_target ?? settings.weekly_strength_sessions_target,
       weekly_steps_target: weekly_steps_target ?? settings.weekly_steps_target,
+      daily_active_minutes_target: daily_active_minutes_target ?? settings.daily_active_minutes_target,
+      daily_sleep_minutes_target: daily_sleep_minutes_target ?? settings.daily_sleep_minutes_target,
+      daily_nutrition_score_target: daily_nutrition_score_target ?? settings.daily_nutrition_score_target,
+      daily_steps_target: daily_steps_target ?? settings.daily_steps_target,
+      daily_strain_target: daily_strain_target ?? settings.daily_strain_target,
       theme: theme ?? settings.theme,
       dashboard_layout: dashboard_layout !== undefined ? dashboard_layout : settings.dashboard_layout,
+      accent_color: accent_color ?? settings.accent_color,
+      pinned_badges: pinned_badges !== undefined ? (typeof pinned_badges === 'string' ? pinned_badges : JSON.stringify(pinned_badges)) : settings.pinned_badges,
     })
     .where(eq(userSettings.id, settings.id))
     .returning();

@@ -7,19 +7,28 @@ type Theme = 'light' | 'dark';
 interface ThemeContextValue {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  accentColor: string;
+  setAccentColor: (color: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
   theme: 'dark',
   setTheme: () => {},
+  accentColor: '#00d26a',
+  setAccentColor: () => {},
 });
 
 export function useTheme() {
   return useContext(ThemeContext);
 }
 
+function applyAccent(color: string) {
+  document.documentElement.style.setProperty('--accent', color);
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('dark');
+  const [accentColor, setAccentState] = useState('#00d26a');
 
   useEffect(() => {
     fetch('/api/settings')
@@ -32,6 +41,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         } else {
           document.documentElement.removeAttribute('data-theme');
         }
+
+        const accent = settings?.accent_color || '#00d26a';
+        setAccentState(accent);
+        applyAccent(accent);
       })
       .catch(() => {});
   }, []);
@@ -50,8 +63,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => {});
   };
 
+  const setAccentColor = (color: string) => {
+    setAccentState(color);
+    applyAccent(color);
+    fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accent_color: color }),
+    }).catch(() => {});
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, accentColor, setAccentColor }}>
       {children}
     </ThemeContext.Provider>
   );

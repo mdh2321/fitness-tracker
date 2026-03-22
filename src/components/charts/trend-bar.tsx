@@ -9,9 +9,10 @@ interface TrendBarProps {
   color?: string;
   label?: string;
   period?: 'daily' | 'weekly' | 'monthly';
+  formatter?: (value: number) => string;
 }
 
-export function TrendBar({ data, color = '#00d26a', label = 'Value', period = 'daily' }: TrendBarProps) {
+export function TrendBar({ data, color = '#00d26a', label = 'Value', period = 'daily', formatter }: TrendBarProps) {
   const { theme } = useTheme();
   const ct = {
     tick: theme === 'light' ? '#71717a' : '#6b7280',
@@ -46,7 +47,7 @@ export function TrendBar({ data, color = '#00d26a', label = 'Value', period = 'd
             color: ct.tooltipColor,
             fontSize: '12px',
           }}
-          formatter={(value: unknown) => [Number(value).toFixed(1), label]}
+          formatter={(value: unknown) => [formatter ? formatter(Number(value)) : Number(value).toFixed(1), label]}
         />
         <Bar dataKey="value" fill={color} fillOpacity={0.85} radius={[4, 4, 0, 0]} maxBarSize={32} />
       </BarChart>

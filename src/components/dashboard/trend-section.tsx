@@ -9,7 +9,7 @@ import { format, parseISO, eachWeekOfInterval, endOfWeek, eachMonthOfInterval, e
 import type { DailyStrain } from '@/lib/types';
 
 type Period = 'daily' | 'weekly' | 'monthly';
-type Metric = 'strain' | 'exercises' | 'activeTime' | 'workoutTime' | 'steps';
+type Metric = 'strain' | 'exercises' | 'activeTime' | 'workoutTime' | 'steps' | 'avgHr' | 'maxHr';
 
 const PERIODS: { value: Period; label: string }[] = [
   { value: 'daily', label: 'Daily' },
@@ -23,14 +23,18 @@ const METRICS: { value: Metric; label: string }[] = [
   { value: 'activeTime', label: 'Active Time' },
   { value: 'workoutTime', label: 'Workout Time' },
   { value: 'steps', label: 'Steps' },
+  { value: 'avgHr', label: 'Avg HR' },
+  { value: 'maxHr', label: 'Max HR' },
 ];
 
 const METRIC_CONFIG: Record<Metric, { color: string; label: string; aggLabel: string }> = {
-  strain: { color: '#00d26a', label: 'Strain', aggLabel: 'Avg Strain' },
+  strain: { color: 'var(--accent)', label: 'Strain', aggLabel: 'Avg Strain' },
   exercises: { color: '#8b5cf6', label: 'Workouts', aggLabel: 'Workouts' },
   activeTime: { color: '#00bcd4', label: 'Active Time (min)', aggLabel: 'Active Time (min)' },
   workoutTime: { color: '#8b5cf6', label: 'Workout Time (min)', aggLabel: 'Workout Time (min)' },
   steps: { color: '#ff6b35', label: 'Steps', aggLabel: 'Steps' },
+  avgHr: { color: '#ff3b5c', label: 'Avg HR (bpm)', aggLabel: 'Avg HR (bpm)' },
+  maxHr: { color: '#ff6b35', label: 'Max HR (bpm)', aggLabel: 'Max HR (bpm)' },
 };
 
 interface TrendSectionProps {
@@ -49,121 +53,85 @@ export function TrendSection({ strainData }: TrendSectionProps) {
     workoutTime: strainData.map((d) => ({ date: d.date, value: d.workout_duration ?? 0 })),
     exercises: strainData.map((d) => ({ date: d.date, value: d.workout_count })),
     steps: strainData.map((d) => ({ date: d.date, value: d.steps || 0 })),
+    avgHr: strainData.filter((d) => d.avg_hr).map((d) => ({ date: d.date, value: d.avg_hr! })),
+    maxHr: strainData.filter((d) => d.max_hr).map((d) => ({ date: d.date, value: d.max_hr! })),
   }), [strainData]);
 
   // Weekly aggregation
   const weeklyData = useMemo(() => {
-    if (strainData.length < 2) return { strain: [], activeTime: [], workoutTime: [], exercises: [], steps: [] };
+    if (strainData.length < 2) return { strain: [], activeTime: [], workoutTime: [], exercises: [], steps: [], avgHr: [], maxHr: [] };
     const sorted = [...strainData].sort((a, b) => a.date.localeCompare(b.date));
     const firstDate = parseISO(sorted[0].date);
     const lastDate = parseISO(sorted[sorted.length - 1].date);
     const weeks = eachWeekOfInterval({ start: firstDate, end: lastDate }, { weekStartsOn: 1 });
     const dataMap = new Map(strainData.map((d) => [d.date, d]));
 
+    const aggregate = (weekStart: Date) => {
+      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+      let strain = 0, strainCount = 0, activeTime = 0, workoutTime = 0, exercises = 0, steps = 0;
+      let hrSum = 0, hrCount = 0, maxHr = 0;
+      for (let d = weekStart; d <= weekEnd; d = new Date(d.getTime() + 86400000)) {
+        const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
+        if (entry) {
+          strain += entry.strain_score; strainCount++;
+          activeTime += entry.total_duration;
+          workoutTime += entry.workout_duration ?? 0;
+          exercises += entry.workout_count;
+          steps += entry.steps || 0;
+          if (entry.avg_hr) { hrSum += entry.avg_hr; hrCount++; }
+          if (entry.max_hr && entry.max_hr > maxHr) maxHr = entry.max_hr;
+        }
+      }
+      return { strain, strainCount, activeTime, workoutTime, exercises, steps, hrAvg: hrCount > 0 ? Math.round(hrSum / hrCount) : null, hrMax: maxHr || null };
+    };
+
     return {
-      strain: weeks.map((weekStart) => {
-        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-        let total = 0, count = 0;
-        for (let d = weekStart; d <= weekEnd; d = new Date(d.getTime() + 86400000)) {
-          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
-          if (entry) { total += entry.strain_score; count++; }
-        }
-        return { date: format(weekStart, 'yyyy-MM-dd'), value: count > 0 ? Math.round(total / count * 10) / 10 : 0 };
-      }),
-      activeTime: weeks.map((weekStart) => {
-        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-        let total = 0;
-        for (let d = weekStart; d <= weekEnd; d = new Date(d.getTime() + 86400000)) {
-          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
-          if (entry) total += entry.total_duration;
-        }
-        return { date: format(weekStart, 'yyyy-MM-dd'), value: total };
-      }),
-      workoutTime: weeks.map((weekStart) => {
-        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-        let total = 0;
-        for (let d = weekStart; d <= weekEnd; d = new Date(d.getTime() + 86400000)) {
-          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
-          if (entry) total += entry.workout_duration ?? 0;
-        }
-        return { date: format(weekStart, 'yyyy-MM-dd'), value: total };
-      }),
-      exercises: weeks.map((weekStart) => {
-        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-        let total = 0;
-        for (let d = weekStart; d <= weekEnd; d = new Date(d.getTime() + 86400000)) {
-          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
-          if (entry) total += entry.workout_count;
-        }
-        return { date: format(weekStart, 'yyyy-MM-dd'), value: total };
-      }),
-      steps: weeks.map((weekStart) => {
-        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-        let total = 0;
-        for (let d = weekStart; d <= weekEnd; d = new Date(d.getTime() + 86400000)) {
-          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
-          if (entry) total += entry.steps || 0;
-        }
-        return { date: format(weekStart, 'yyyy-MM-dd'), value: total };
-      }),
+      strain: weeks.map((ws) => { const a = aggregate(ws); return { date: format(ws, 'yyyy-MM-dd'), value: a.strainCount > 0 ? Math.round(a.strain / a.strainCount * 10) / 10 : 0 }; }),
+      activeTime: weeks.map((ws) => ({ date: format(ws, 'yyyy-MM-dd'), value: aggregate(ws).activeTime })),
+      workoutTime: weeks.map((ws) => ({ date: format(ws, 'yyyy-MM-dd'), value: aggregate(ws).workoutTime })),
+      exercises: weeks.map((ws) => ({ date: format(ws, 'yyyy-MM-dd'), value: aggregate(ws).exercises })),
+      steps: weeks.map((ws) => ({ date: format(ws, 'yyyy-MM-dd'), value: aggregate(ws).steps })),
+      avgHr: weeks.map((ws) => { const a = aggregate(ws); return a.hrAvg !== null ? { date: format(ws, 'yyyy-MM-dd'), value: a.hrAvg } : null; }).filter(Boolean) as { date: string; value: number }[],
+      maxHr: weeks.map((ws) => { const a = aggregate(ws); return a.hrMax !== null ? { date: format(ws, 'yyyy-MM-dd'), value: a.hrMax } : null; }).filter(Boolean) as { date: string; value: number }[],
     };
   }, [strainData]);
 
   // Monthly aggregation
   const monthlyData = useMemo(() => {
-    if (strainData.length < 2) return { strain: [], activeTime: [], workoutTime: [], exercises: [], steps: [] };
+    if (strainData.length < 2) return { strain: [], activeTime: [], workoutTime: [], exercises: [], steps: [], avgHr: [], maxHr: [] };
     const sorted = [...strainData].sort((a, b) => a.date.localeCompare(b.date));
     const firstDate = parseISO(sorted[0].date);
     const lastDate = parseISO(sorted[sorted.length - 1].date);
     const months = eachMonthOfInterval({ start: firstDate, end: lastDate });
     const dataMap = new Map(strainData.map((d) => [d.date, d]));
 
+    const aggregate = (monthStart: Date) => {
+      const monthEnd = endOfMonth(monthStart);
+      let strain = 0, strainCount = 0, activeTime = 0, workoutTime = 0, exercises = 0, steps = 0;
+      let hrSum = 0, hrCount = 0, maxHr = 0;
+      for (let d = monthStart; d <= monthEnd; d = new Date(d.getTime() + 86400000)) {
+        const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
+        if (entry) {
+          strain += entry.strain_score; strainCount++;
+          activeTime += entry.total_duration;
+          workoutTime += entry.workout_duration ?? 0;
+          exercises += entry.workout_count;
+          steps += entry.steps || 0;
+          if (entry.avg_hr) { hrSum += entry.avg_hr; hrCount++; }
+          if (entry.max_hr && entry.max_hr > maxHr) maxHr = entry.max_hr;
+        }
+      }
+      return { strain, strainCount, activeTime, workoutTime, exercises, steps, hrAvg: hrCount > 0 ? Math.round(hrSum / hrCount) : null, hrMax: maxHr || null };
+    };
+
     return {
-      strain: months.map((monthStart) => {
-        const monthEnd = endOfMonth(monthStart);
-        let total = 0, count = 0;
-        for (let d = monthStart; d <= monthEnd; d = new Date(d.getTime() + 86400000)) {
-          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
-          if (entry) { total += entry.strain_score; count++; }
-        }
-        return { date: format(monthStart, 'yyyy-MM-dd'), value: count > 0 ? Math.round(total / count * 10) / 10 : 0 };
-      }),
-      activeTime: months.map((monthStart) => {
-        const monthEnd = endOfMonth(monthStart);
-        let total = 0;
-        for (let d = monthStart; d <= monthEnd; d = new Date(d.getTime() + 86400000)) {
-          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
-          if (entry) total += entry.total_duration;
-        }
-        return { date: format(monthStart, 'yyyy-MM-dd'), value: total };
-      }),
-      workoutTime: months.map((monthStart) => {
-        const monthEnd = endOfMonth(monthStart);
-        let total = 0;
-        for (let d = monthStart; d <= monthEnd; d = new Date(d.getTime() + 86400000)) {
-          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
-          if (entry) total += entry.workout_duration ?? 0;
-        }
-        return { date: format(monthStart, 'yyyy-MM-dd'), value: total };
-      }),
-      exercises: months.map((monthStart) => {
-        const monthEnd = endOfMonth(monthStart);
-        let total = 0;
-        for (let d = monthStart; d <= monthEnd; d = new Date(d.getTime() + 86400000)) {
-          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
-          if (entry) total += entry.workout_count;
-        }
-        return { date: format(monthStart, 'yyyy-MM-dd'), value: total };
-      }),
-      steps: months.map((monthStart) => {
-        const monthEnd = endOfMonth(monthStart);
-        let total = 0;
-        for (let d = monthStart; d <= monthEnd; d = new Date(d.getTime() + 86400000)) {
-          const entry = dataMap.get(format(d, 'yyyy-MM-dd'));
-          if (entry) total += entry.steps || 0;
-        }
-        return { date: format(monthStart, 'yyyy-MM-dd'), value: total };
-      }),
+      strain: months.map((ms) => { const a = aggregate(ms); return { date: format(ms, 'yyyy-MM-dd'), value: a.strainCount > 0 ? Math.round(a.strain / a.strainCount * 10) / 10 : 0 }; }),
+      activeTime: months.map((ms) => ({ date: format(ms, 'yyyy-MM-dd'), value: aggregate(ms).activeTime })),
+      workoutTime: months.map((ms) => ({ date: format(ms, 'yyyy-MM-dd'), value: aggregate(ms).workoutTime })),
+      exercises: months.map((ms) => ({ date: format(ms, 'yyyy-MM-dd'), value: aggregate(ms).exercises })),
+      steps: months.map((ms) => ({ date: format(ms, 'yyyy-MM-dd'), value: aggregate(ms).steps })),
+      avgHr: months.map((ms) => { const a = aggregate(ms); return a.hrAvg !== null ? { date: format(ms, 'yyyy-MM-dd'), value: a.hrAvg } : null; }).filter(Boolean) as { date: string; value: number }[],
+      maxHr: months.map((ms) => { const a = aggregate(ms); return a.hrMax !== null ? { date: format(ms, 'yyyy-MM-dd'), value: a.hrMax } : null; }).filter(Boolean) as { date: string; value: number }[],
     };
   }, [strainData]);
 

@@ -23,6 +23,7 @@
   --fg: #e5e5e5;
   --fg-secondary: #9ca3af;
   --fg-muted: #6b7280;
+  --accent: #00d26a;
 }
 
 /* Light theme override */
@@ -69,4 +70,14 @@ body {
 
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
+}
+
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes levelPulse {
+  0%, 100% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.4), 0 0 80px rgba(0, 210, 106, 0.2); }
+  50% { box-shadow: 0 0 60px rgba(139, 92, 246, 0.6), 0 0 120px rgba(0, 210, 106, 0.3); }
 }

@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { workouts, achievements, dailyStrain, userSettings } from '@/db/schema';
+import { workouts, achievements, dailyStrain, dailySleep, dailyNutrition, userSettings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { BADGES, PASSIVE_ACTIVITIES } from './constants';
 import { calculateStreaks, calculateExerciseStreak } from './streaks';
@@ -32,11 +32,23 @@ type StrainRow = {
   steps: number;
 };
 
+type SleepRow = {
+  date: string;
+  total_minutes: number;
+};
+
+type NutritionRow = {
+  date: string;
+  nutrition_score: number | null;
+};
+
 // ─── core award logic (shared between both evaluation paths) ──────────────────
 
 async function runAwards(
   allWorkouts: WorkoutRow[],
   allStrainData: StrainRow[],
+  allSleepData: SleepRow[],
+  allNutritionData: NutritionRow[],
   settings: { weekly_workout_target: number; weekly_cardio_minutes_target: number; weekly_strength_sessions_target: number; weekly_steps_target: number } | undefined,
   earnedKeys: Set<string>,
   workoutId: number | null,
@@ -228,6 +240,95 @@ async function runAwards(
     }
   }
 
+  // ── Sleep badges ─────────────────────────────────────────────────────────────
+  const sortedSleep = [...allSleepData].sort((a, b) => a.date.localeCompare(b.date));
+
+  // Sleep Scholar: 7 consecutive nights of 7+ hours
+  let sleepStreak = 0;
+  let maxSleepStreak = 0;
+  for (let i = 0; i < sortedSleep.length; i++) {
+    if (sortedSleep[i].total_minutes >= 420) {
+      if (i === 0 || differenceInCalendarDays(parseISO(sortedSleep[i].date), parseISO(sortedSleep[i - 1].date)) === 1) {
+        sleepStreak++;
+      } else {
+        sleepStreak = 1;
+      }
+      maxSleepStreak = Math.max(maxSleepStreak, sleepStreak);
+    } else {
+      sleepStreak = 0;
+    }
+  }
+  if (maxSleepStreak >= 7) await award('sleep_7_streak_7');
+
+  // Well Rested: average 8+ hours across any full week (Mon–Sun)
+  const sleepByWeek: Record<string, number[]> = {};
+  for (const s of sortedSleep) {
+    const wk = format(startOfWeek(parseISO(s.date), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    if (!sleepByWeek[wk]) sleepByWeek[wk] = [];
+    sleepByWeek[wk].push(s.total_minutes);
+  }
+  for (const mins of Object.values(sleepByWeek)) {
+    if (mins.length >= 7) {
+      const avg = mins.reduce((a, b) => a + b, 0) / mins.length;
+      if (avg >= 480) { await award('sleep_8h_avg_week'); break; }
+    }
+  }
+
+  // Dream Machine: average 7+ hours for a calendar month
+  const sleepByMonth: Record<string, number[]> = {};
+  for (const s of sortedSleep) {
+    const month = s.date.slice(0, 7); // yyyy-MM
+    if (!sleepByMonth[month]) sleepByMonth[month] = [];
+    sleepByMonth[month].push(s.total_minutes);
+  }
+  for (const [month, mins] of Object.entries(sleepByMonth)) {
+    const daysInMonth = getDaysInMonth(parseISO(`${month}-01`));
+    if (mins.length >= daysInMonth * 0.8) { // require data for at least 80% of the month
+      const avg = mins.reduce((a, b) => a + b, 0) / mins.length;
+      if (avg >= 420) { await award('sleep_7h_avg_month'); break; }
+    }
+  }
+
+  // ── Nutrition badges ────────────────────────────────────────────────────────
+  const sortedNutrition = [...allNutritionData]
+    .filter((d) => d.nutrition_score !== null)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Perfect Plate: any day with score 21
+  if (sortedNutrition.some((d) => d.nutrition_score! >= 21)) await award('nutrition_perfect');
+
+  // Clean Eater: 7 consecutive days with score 14+
+  let nutStreak = 0;
+  let maxNutStreak = 0;
+  for (let i = 0; i < sortedNutrition.length; i++) {
+    if (sortedNutrition[i].nutrition_score! >= 14) {
+      if (i === 0 || differenceInCalendarDays(parseISO(sortedNutrition[i].date), parseISO(sortedNutrition[i - 1].date)) === 1) {
+        nutStreak++;
+      } else {
+        nutStreak = 1;
+      }
+      maxNutStreak = Math.max(maxNutStreak, nutStreak);
+    } else {
+      nutStreak = 0;
+    }
+  }
+  if (maxNutStreak >= 7) await award('nutrition_streak_7');
+
+  // Nutrition Master: average 14+ for a calendar month
+  const nutByMonth: Record<string, number[]> = {};
+  for (const d of sortedNutrition) {
+    const month = d.date.slice(0, 7);
+    if (!nutByMonth[month]) nutByMonth[month] = [];
+    nutByMonth[month].push(d.nutrition_score!);
+  }
+  for (const [month, scores] of Object.entries(nutByMonth)) {
+    const daysInMonth = getDaysInMonth(parseISO(`${month}-01`));
+    if (scores.length >= daysInMonth * 0.8) {
+      const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+      if (avg >= 14) { await award('nutrition_14_avg_month'); break; }
+    }
+  }
+
   // ── Variety badges ────────────────────────────────────────────────────────────
   // Early Bird / Night Owl: any workout at qualifying hour
   if (activeWorkouts.some((w) => parseISO(w.started_at).getHours() < 6))   await award('early_bird');
@@ -259,9 +360,17 @@ export async function evaluateAchievements(workoutId: number): Promise<NewBadge[
     date: dailyStrain.date, strain_score: dailyStrain.strain_score, steps: dailyStrain.steps,
   }).from(dailyStrain);
 
+  const allSleepData = await db.select({
+    date: dailySleep.date, total_minutes: dailySleep.total_minutes,
+  }).from(dailySleep);
+
+  const allNutritionData = await db.select({
+    date: dailyNutrition.date, nutrition_score: dailyNutrition.nutrition_score,
+  }).from(dailyNutrition);
+
   const settings = await db.select().from(userSettings).get();
 
-  return runAwards(allWorkouts, allStrainData, settings ?? undefined, earnedKeys, workoutId);
+  return runAwards(allWorkouts, allStrainData, allSleepData, allNutritionData, settings ?? undefined, earnedKeys, workoutId);
 }
 
 /**
@@ -280,13 +389,19 @@ export async function evaluateAllAchievements(): Promise<NewBadge[]> {
     strain_score: workouts.strain_score,
   }).from(workouts);
 
-  if (allWorkouts.length === 0) return [];
-
   const allStrainData = await db.select({
     date: dailyStrain.date, strain_score: dailyStrain.strain_score, steps: dailyStrain.steps,
   }).from(dailyStrain);
 
+  const allSleepData = await db.select({
+    date: dailySleep.date, total_minutes: dailySleep.total_minutes,
+  }).from(dailySleep);
+
+  const allNutritionData = await db.select({
+    date: dailyNutrition.date, nutrition_score: dailyNutrition.nutrition_score,
+  }).from(dailyNutrition);
+
   const settings = await db.select().from(userSettings).get();
 
-  return runAwards(allWorkouts, allStrainData, settings ?? undefined, earnedKeys, null);
+  return runAwards(allWorkouts, allStrainData, allSleepData, allNutritionData, settings ?? undefined, earnedKeys, null);
 }

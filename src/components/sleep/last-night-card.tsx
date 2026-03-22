@@ -18,8 +18,25 @@ function formatDuration(minutes: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-function formatTime(iso: string): string {
-  return format(parseISO(iso), 'h:mm a');
+function formatTime(dateStr: string): string {
+  // Parse Auto Export format "2026-03-06 01:07:31 +1100" or ISO strings
+  const offsetMatch = dateStr.trim().match(/([+-])(\d{2}):?(\d{2})$/);
+  if (offsetMatch) {
+    const normalized = dateStr.trim().replace(' ', 'T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+    const date = new Date(normalized);
+    const sign = offsetMatch[1] === '+' ? 1 : -1;
+    const offsetH = parseInt(offsetMatch[2]);
+    const offsetM = parseInt(offsetMatch[3]);
+    const totalOffsetMs = sign * (offsetH * 60 + offsetM) * 60000;
+    const localMs = date.getTime() + totalOffsetMs;
+    const localDate = new Date(localMs);
+    const h = localDate.getUTCHours();
+    const m = localDate.getUTCMinutes();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+  }
+  return format(parseISO(dateStr), 'h:mm a');
 }
 
 export function LastNightCard({ daily, session, isLoading }: LastNightCardProps) {

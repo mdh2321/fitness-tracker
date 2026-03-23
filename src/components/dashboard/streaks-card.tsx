@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { format, subDays } from 'date-fns';
-import { Flame, Dumbbell, Moon, Salad, Trophy } from 'lucide-react';
+import { format, subDays, getDaysInMonth, startOfMonth, addDays, addMonths, subMonths, isAfter, parseISO } from 'date-fns';
+import { Flame, Dumbbell, Moon, Salad, Trophy, Check, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface StreakType {
@@ -34,14 +34,123 @@ export interface StreaksCardProps {
   };
 }
 
-function StreakTile({ streak }: { streak: StreakType }) {
+function StreakCalendarModal({ streak, onClose }: { streak: StreakType; onClose: () => void }) {
+  const today = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(startOfMonth(today));
+
+  const monthDays = useMemo(() => {
+    const days = getDaysInMonth(selectedMonth);
+    const result = [];
+    for (let i = 0; i < days; i++) {
+      const date = format(addDays(selectedMonth, i), 'yyyy-MM-dd');
+      result.push({ date, qualified: streak.qualifyingDates.has(date) });
+    }
+    return result;
+  }, [selectedMonth, streak.qualifyingDates]);
+
+  const canGoNext = selectedMonth < startOfMonth(today);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      {/* Modal */}
+      <div
+        className="relative rounded-2xl border p-5 w-[340px] max-w-[90vw] shadow-2xl"
+        style={{
+          background: 'var(--bg-card)',
+          borderColor: `color-mix(in srgb, ${streak.color} 30%, var(--border))`,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <streak.icon className="h-4 w-4" style={{ color: streak.color }} />
+            <span className="text-sm font-semibold" style={{ color: 'var(--fg)' }}>{streak.label}</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-md hover:bg-[var(--bg-elevated)] transition-colors"
+            style={{ color: 'var(--fg-muted)' }}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Month navigation */}
+        <div className="flex items-center justify-between mb-3">
+          <button
+            onClick={() => setSelectedMonth(subMonths(selectedMonth, 1))}
+            className="p-1 rounded-md hover:bg-[var(--bg-elevated)] transition-colors"
+            style={{ color: 'var(--fg-muted)' }}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="text-xs font-medium" style={{ color: 'var(--fg-secondary)' }}>
+            {format(selectedMonth, 'MMMM yyyy')}
+          </span>
+          <button
+            onClick={() => setSelectedMonth(addMonths(selectedMonth, 1))}
+            disabled={!canGoNext}
+            className="p-1 rounded-md hover:bg-[var(--bg-elevated)] transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+            style={{ color: 'var(--fg-muted)' }}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Calendar grid */}
+        <div className="grid grid-cols-7 gap-2">
+          {monthDays.map((day) => {
+            const isFuture = isAfter(parseISO(day.date), today);
+            return (
+              <div key={day.date} className="flex flex-col items-center">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] ${
+                    isFuture ? 'opacity-25' : ''
+                  }`}
+                  style={
+                    day.qualified && !isFuture
+                      ? { background: `color-mix(in srgb, ${streak.color} 15%, transparent)`, border: `2px solid color-mix(in srgb, ${streak.color} 70%, transparent)` }
+                      : { background: 'var(--bg-elevated)', border: '1px solid var(--border)' }
+                  }
+                >
+                  {isFuture ? (
+                    <span className="tabular-nums" style={{ color: 'var(--fg-muted)' }}>{format(parseISO(day.date), 'd')}</span>
+                  ) : day.qualified ? (
+                    <Check className="h-3.5 w-3.5" style={{ color: streak.color }} />
+                  ) : (
+                    <span className="tabular-nums" style={{ color: 'var(--fg-muted)' }}>{format(parseISO(day.date), 'd')}</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StreakTile({ streak, onClick }: { streak: StreakType; onClick: () => void }) {
   const today = format(new Date(), 'yyyy-MM-dd');
   const last14 = Array.from({ length: 14 }, (_, i) => format(subDays(new Date(), 13 - i), 'yyyy-MM-dd'));
 
   return (
     <div
-      className="relative rounded-xl border p-4 overflow-hidden"
+      className="relative rounded-xl border p-4 overflow-hidden cursor-pointer hover:brightness-110 transition-all"
       style={{ borderColor: `color-mix(in srgb, ${streak.color} 20%, var(--border))`, background: 'var(--bg-card)' }}
+      onClick={onClick}
     >
       {/* Subtle gradient accent */}
       <div
@@ -111,6 +220,9 @@ export function StreaksCard({
   nutritionQualifyingDates,
   dailyTargets,
 }: StreaksCardProps) {
+  const [openStreakKey, setOpenStreakKey] = useState<string | null>(null);
+  const closeModal = useCallback(() => setOpenStreakKey(null), []);
+
   const activeLabel = `Active Time (${dailyTargets?.activeMinutes ?? 30}m+)`;
   const sleepLabel = `Sleep (${Math.round((dailyTargets?.sleepMinutes ?? 420) / 60)}h+)`;
   const nutritionLabel = `Nutrition (${dailyTargets?.nutritionScore ?? 14}+)`;
@@ -147,25 +259,30 @@ export function StreaksCard({
       key: 'nutrition',
       label: nutritionLabel,
       icon: Salad,
-      color: 'var(--accent)',
+      color: '#00d26a',
       current: nutritionStreak.current,
       longest: nutritionStreak.longest,
       qualifyingDates: new Set(nutritionQualifyingDates),
     },
   ], [workoutStreak, exerciseStreak, sleepStreak, nutritionStreak, workoutDates, exerciseQualifyingDates, sleepQualifyingDates, nutritionQualifyingDates, activeLabel, sleepLabel, nutritionLabel]);
 
+  const openStreak = openStreakKey ? streaks.find((s) => s.key === openStreakKey) : null;
+
   return (
-    <Card>
-      <CardHeader className="pb-4">
-        <CardTitle>Streaks</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-3">
-          {streaks.map((s) => (
-            <StreakTile key={s.key} streak={s} />
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <>
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle>Streaks</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3">
+            {streaks.map((s) => (
+              <StreakTile key={s.key} streak={s} onClick={() => setOpenStreakKey(s.key)} />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+      {openStreak && <StreakCalendarModal streak={openStreak} onClose={closeModal} />}
+    </>
   );
 }

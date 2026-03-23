@@ -6,7 +6,7 @@ import { useStats, useStrainData } from '@/hooks/use-stats';
 import { useWorkouts } from '@/hooks/use-workouts';
 import { TodayCard } from '@/components/dashboard/today-card';
 import { StreaksCard } from '@/components/dashboard/streaks-card';
-import { WorkoutCalendarCard } from '@/components/dashboard/workout-calendar-card';
+import { DashboardCalendarCard } from '@/components/dashboard/dashboard-calendar-card';
 import { WeeklyOverview } from '@/components/dashboard/weekly-overview';
 import { FitnessSummary } from '@/components/dashboard/fitness-summary';
 import { TrendSection } from '@/components/dashboard/trend-section';
@@ -115,7 +115,7 @@ export default function DashboardPage() {
         dailyTargets={stats.dailyTargets}
       />
 
-      <WorkoutCalendarCard workoutDates={workoutDates} />
+      <DashboardCalendarCard />
 
       {allWorkouts && allWorkouts.length > 0 && (
         <FitnessSummary workouts={activeWorkouts} />

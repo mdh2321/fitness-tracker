@@ -81,11 +81,11 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Fetch week data for progress evaluation
+  // Fetch week data for progress evaluation (use local_date to match stats route)
   const weekWorkouts = await db.select().from(workouts).where(
     and(
-      sql`date(${workouts.started_at}) >= ${weekStart}`,
-      sql`date(${workouts.started_at}) <= ${weekEnd}`
+      gte(workouts.local_date, weekStart),
+      sql`${workouts.local_date} <= ${weekEnd}`
     )
   );
   const activeWorkouts = weekWorkouts.filter((w) => !PASSIVE_ACTIVITIES.has(w.name));

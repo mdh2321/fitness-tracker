@@ -24,6 +24,7 @@ interface MonthGridProps {
   strainData: DailyStrain[];
   nutritionScores: Record<string, number | null>;
   sleepData?: Record<string, number | null>;
+  compact?: boolean;
 }
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -36,6 +37,7 @@ export function MonthGrid({
   strainData,
   nutritionScores,
   sleepData,
+  compact,
 }: MonthGridProps) {
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -103,6 +105,7 @@ export function MonthGrid({
             data={day}
             selected={selectedDate === day.date}
             onClick={() => onSelectDate(day.date)}
+            compact={compact}
           />
         ))}
       </div>

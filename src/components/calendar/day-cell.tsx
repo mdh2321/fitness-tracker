@@ -17,9 +17,10 @@ interface DayCellProps {
   data: DayCellData;
   selected: boolean;
   onClick: () => void;
+  compact?: boolean;
 }
 
-export function DayCell({ data, selected, onClick }: DayCellProps) {
+export function DayCell({ data, selected, onClick, compact }: DayCellProps) {
   const day = parseInt(data.date.split('-')[2], 10);
 
   // Pick the workout with the longest duration
@@ -31,15 +32,17 @@ export function DayCell({ data, selected, onClick }: DayCellProps) {
   return (
     <button
       onClick={onClick}
-      className="relative flex flex-col items-center justify-start p-1.5 rounded-lg transition-all text-center min-h-[60px] sm:min-h-[72px]"
+      className={`relative flex flex-col items-center justify-start rounded-lg transition-all text-center cursor-pointer hover:bg-[var(--bg-hover)] ${
+        compact ? 'p-1 min-h-[44px]' : 'p-1.5 min-h-[60px] sm:min-h-[72px]'
+      }`}
       style={{
-        background: selected ? 'var(--bg-elevated)' : 'transparent',
+        background: selected ? 'var(--bg-elevated)' : undefined,
         opacity: data.isCurrentMonth ? 1 : 0.3,
         border: selected ? '1px solid var(--border)' : '1px solid transparent',
       }}
     >
       <span
-        className="text-xs font-medium tabular-nums"
+        className={`font-medium tabular-nums ${compact ? 'text-[10px]' : 'text-xs'}`}
         style={{
           color: data.isToday ? '#00d26a' : 'var(--fg)',
         }}
@@ -54,10 +57,10 @@ export function DayCell({ data, selected, onClick }: DayCellProps) {
         return (
           <div className="flex-1 flex items-center justify-center relative w-full">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center"
+              className={`rounded-full flex items-center justify-center ${compact ? 'w-6 h-6' : 'w-8 h-8'}`}
               style={{ background: `${color}20` }}
             >
-              <Icon className="w-4 h-4" style={{ color }} />
+              <Icon className={compact ? 'w-3 h-3' : 'w-4 h-4'} style={{ color }} />
             </div>
             {extras > 0 && (
               <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[9px] font-medium leading-none" style={{ color: 'var(--fg-muted)' }}>

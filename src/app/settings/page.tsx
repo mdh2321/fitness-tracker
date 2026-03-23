@@ -8,17 +8,28 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Save, Sun, Moon } from 'lucide-react';
+import { Save, Sun, Moon, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExportCard } from '@/components/settings/export-card';
 import { ACCENT_COLORS } from '@/lib/constants';
+import { useWeeklyQuests } from '@/hooks/use-quests';
 
 export default function SettingsPage() {
   const { settings, isLoading, updateSettings } = useSettings();
   const { register, handleSubmit, reset } = useForm();
   const { theme, setTheme, accentColor, setAccentColor } = useTheme();
+  const { data: questData } = useWeeklyQuests();
+  const userLevel = questData?.xp?.level ?? 1;
   useEffect(() => {
-    if (settings) reset(settings);
+    if (settings) {
+      // Convert sleep target from minutes (DB) to hours (UI)
+      reset({
+        ...settings,
+        daily_sleep_minutes_target: settings.daily_sleep_minutes_target >= 60
+          ? settings.daily_sleep_minutes_target / 60
+          : settings.daily_sleep_minutes_target,
+      });
+    }
   }, [settings, reset]);
 
   const onSubmit = async (data: any) => {
@@ -33,7 +44,7 @@ export default function SettingsPage() {
         weekly_strength_sessions_target: parseInt(data.weekly_strength_sessions_target),
         weekly_steps_target: parseInt(data.weekly_steps_target),
         daily_active_minutes_target: parseInt(data.daily_active_minutes_target),
-        daily_sleep_minutes_target: parseInt(data.daily_sleep_minutes_target),
+        daily_sleep_minutes_target: Math.round(parseFloat(data.daily_sleep_minutes_target) * 60),
         daily_nutrition_score_target: parseInt(data.daily_nutrition_score_target),
         daily_steps_target: parseInt(data.daily_steps_target),
         daily_strain_target: parseFloat(data.daily_strain_target),
@@ -92,23 +103,32 @@ export default function SettingsPage() {
             <div className="flex flex-wrap gap-2">
               {ACCENT_COLORS.map((c) => {
                 const isSelected = accentColor === c.hex;
+                const isLocked = c.level > userLevel;
                 return (
                   <button
-                    key={c.hex}
-                    onClick={() => setAccentColor(c.hex)}
+                    key={c.hex + c.name}
+                    onClick={() => !isLocked && setAccentColor(c.hex)}
                     className="relative group flex flex-col items-center gap-1"
-                    title={c.name}
+                    title={isLocked ? `Unlocks at Level ${c.level}` : c.name}
+                    disabled={isLocked}
+                    style={{ opacity: isLocked ? 0.4 : 1, cursor: isLocked ? 'not-allowed' : 'pointer' }}
                   >
                     <div
-                      className="w-8 h-8 rounded-full transition-all"
+                      className="w-8 h-8 rounded-full transition-all relative"
                       style={{
                         background: c.gradient || c.hex,
                         outline: isSelected ? '2px solid var(--fg)' : '2px solid transparent',
                         outlineOffset: '2px',
                       }}
-                    />
+                    >
+                      {isLocked && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-full" style={{ background: 'rgba(0,0,0,0.5)' }}>
+                          <Lock className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                    </div>
                     <span className="text-[9px]" style={{ color: 'var(--fg-muted)' }}>
-                      {c.name}
+                      {isLocked ? `Lv.${c.level}` : c.name}
                     </span>
                   </button>
                 );
@@ -193,7 +213,7 @@ export default function SettingsPage() {
                 <Input type="number" min={5} max={10} step={0.5} {...register('daily_sleep_minutes_target', {
                   setValueAs: (v: string) => v,
                 })} />
-                <p className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Stored as minutes (e.g. 420 = 7h)</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Target hours of sleep per night</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

@@ -412,6 +412,12 @@ export async function POST(request: NextRequest) {
       };
 
       if (existingSleep) {
+        // Don't overwrite with lower sleep duration — Health Auto Export / Oura
+        // sometimes re-sends partial or recalculated data that's less accurate
+        if (existingSleep.duration_minutes > totalMinutes) {
+          console.log(`[Apple Health Sync] Skipping sleep update for ${date}: existing ${existingSleep.duration_minutes}min > incoming ${totalMinutes}min`);
+          continue;
+        }
         await db.update(sleepSessions).set(sleepData).where(eq(sleepSessions.source_id, sourceId));
       } else {
         await db.insert(sleepSessions).values({

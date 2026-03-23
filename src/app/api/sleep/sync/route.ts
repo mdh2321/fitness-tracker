@@ -81,6 +81,11 @@ async function upsertSleepSession(parsed: NonNullable<ReturnType<typeof parseSle
   const existing = await db.select().from(sleepSessions).where(eq(sleepSessions.source_id, sourceId)).get();
 
   if (existing) {
+    // Don't overwrite with lower sleep duration — partial/recalculated data
+    if (existing.duration_minutes > parsed.duration_minutes) {
+      console.log(`[Sleep Sync] Skipping update for ${parsed.date}: existing ${existing.duration_minutes}min > incoming ${parsed.duration_minutes}min`);
+      return parsed.date;
+    }
     await db.update(sleepSessions).set({
       ...parsed,
     }).where(eq(sleepSessions.source_id, sourceId));

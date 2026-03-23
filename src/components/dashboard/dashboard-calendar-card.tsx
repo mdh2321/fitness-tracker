@@ -117,26 +117,26 @@ export function DashboardCalendarCard() {
   return (
     <>
       <Card>
-        <div className="p-3">
+        <div className="p-4">
           {/* Navigation */}
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => setMonth((m) => subMonths(m, 1))}
-              className="p-1.5 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors"
-              style={{ color: 'var(--fg-secondary)' }}
+              className="p-1 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors"
+              style={{ color: 'var(--fg-muted)' }}
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-4 w-4" />
             </button>
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--fg)' }}>
+            <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--fg-secondary)' }}>
               {format(month, 'MMMM yyyy')}
             </h2>
             <button
               onClick={() => setMonth((m) => addMonths(m, 1))}
               disabled={!canGoForward}
-              className="p-1.5 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors disabled:opacity-30"
-              style={{ color: 'var(--fg-secondary)' }}
+              className="p-1 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors disabled:opacity-20"
+              style={{ color: 'var(--fg-muted)' }}
             >
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
 

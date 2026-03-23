@@ -32,41 +32,43 @@ export function DayCell({ data, selected, onClick, compact }: DayCellProps) {
   return (
     <button
       onClick={onClick}
-      className={`relative flex flex-col items-center justify-start rounded-lg transition-all text-center cursor-pointer hover:bg-[var(--bg-hover)] ${
-        compact ? 'p-1 min-h-[44px]' : 'p-1.5 min-h-[60px] sm:min-h-[72px]'
-      }`}
+      className="relative flex flex-col items-center justify-start rounded-lg transition-all text-center cursor-pointer hover:bg-[var(--bg-hover)] w-full h-12 p-1 gap-0.5"
       style={{
-        background: selected ? 'var(--bg-elevated)' : undefined,
-        opacity: data.isCurrentMonth ? 1 : 0.3,
+        background: selected
+          ? 'var(--bg-elevated)'
+          : primary
+            ? `${getWorkoutColor(primary.name, primary.type as any)}08`
+            : undefined,
+        opacity: data.isCurrentMonth ? 1 : 0.25,
         border: selected ? '1px solid var(--border)' : '1px solid transparent',
       }}
     >
       <span
-        className={`font-medium tabular-nums ${compact ? 'text-[10px]' : 'text-xs'}`}
+        className="text-[10px] font-semibold tabular-nums leading-none"
         style={{
-          color: data.isToday ? '#00d26a' : 'var(--fg)',
+          color: data.isToday ? '#00d26a' : 'var(--fg-secondary)',
         }}
       >
         {day}
       </span>
 
-      {/* Primary workout icon — vertically centered between date and bottom */}
+      {/* Primary workout icon — centered in remaining space */}
       {primary && (() => {
         const Icon = getWorkoutIcon(primary.name);
         const color = getWorkoutColor(primary.name, primary.type as any);
         return (
-          <div className="flex-1 flex items-center justify-center relative w-full">
-            <div
-              className={`rounded-full flex items-center justify-center ${compact ? 'w-6 h-6' : 'w-8 h-8'}`}
-              style={{ background: `${color}20` }}
-            >
-              <Icon className={compact ? 'w-3 h-3' : 'w-4 h-4'} style={{ color }} />
+          <div className="flex-1 flex items-center justify-center w-full">
+            <div className="flex items-center gap-0.5">
+              <Icon className="w-4 h-4" style={{ color }} />
+              {extras > 0 && (
+                <span
+                  className="text-[7px] font-bold leading-none"
+                  style={{ color: 'var(--fg-muted)' }}
+                >
+                  +{extras}
+                </span>
+              )}
             </div>
-            {extras > 0 && (
-              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[9px] font-medium leading-none" style={{ color: 'var(--fg-muted)' }}>
-                +{extras}
-              </span>
-            )}
           </div>
         );
       })()}

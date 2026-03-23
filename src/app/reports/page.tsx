@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useReportsList, type WeeklyReport } from '@/hooks/use-reports';
 import { useStrainData } from '@/hooks/use-stats';
 import { Sparkles, Loader2, Trash2, ChevronDown, ChevronUp, Dumbbell, Activity, Zap, Moon, Salad, Footprints } from 'lucide-react';
@@ -40,6 +41,60 @@ function computePriorAverages(reports: WeeklyReport[], index: number): PriorAver
   };
 }
 
+// ── Weekly Grade ──
+// Composite score from 0–100 based on available metrics, mapped to letter grade.
+// Each metric is scored 0–100 against reasonable weekly benchmarks, then averaged.
+const GRADE_THRESHOLDS: { min: number; grade: string; color: string }[] = [
+  { min: 95, grade: 'A+', color: '#00d26a' },
+  { min: 88, grade: 'A',  color: '#00d26a' },
+  { min: 80, grade: 'A-', color: '#22c55e' },
+  { min: 73, grade: 'B+', color: '#00bcd4' },
+  { min: 65, grade: 'B',  color: '#00bcd4' },
+  { min: 58, grade: 'B-', color: '#3b82f6' },
+  { min: 50, grade: 'C+', color: '#f59e0b' },
+  { min: 42, grade: 'C',  color: '#f59e0b' },
+  { min: 35, grade: 'C-', color: '#ff6b35' },
+  { min: 25, grade: 'D+', color: '#ff6b35' },
+  { min: 15, grade: 'D',  color: '#ff3b5c' },
+  { min: 0,  grade: 'F',  color: '#ff3b5c' },
+];
+
+function getWeeklyGrade(report: WeeklyReport): { grade: string; color: string; score: number } {
+  const scores: number[] = [];
+
+  // Workouts: 0 at 0, 100 at 5+
+  scores.push(Math.min((report.workout_count / 5) * 100, 100));
+
+  // Active minutes: 0 at 0, 100 at 300+ (≈ 5h/week)
+  scores.push(Math.min((report.total_duration / 300) * 100, 100));
+
+  // Strain: 0 at 0, 100 at 14+ (high activity)
+  if (report.avg_strain != null && report.avg_strain > 0) {
+    scores.push(Math.min((report.avg_strain / 14) * 100, 100));
+  }
+
+  // Sleep: 0 at <5h, 100 at 7.5h+
+  if (report.avg_sleep_hours != null && report.avg_sleep_hours > 0) {
+    const sleepScore = Math.min(Math.max((report.avg_sleep_hours - 5) / 2.5, 0) * 100, 100);
+    scores.push(sleepScore);
+  }
+
+  // Nutrition: 0 at 0, 100 at 16+ (out of 21)
+  if (report.avg_nutrition_score != null && report.avg_nutrition_score > 0) {
+    scores.push(Math.min((report.avg_nutrition_score / 16) * 100, 100));
+  }
+
+  // Steps: 0 at 0, 100 at 70k+ (10k/day)
+  if (report.total_steps > 0) {
+    scores.push(Math.min((report.total_steps / 70000) * 100, 100));
+  }
+
+  const composite = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+  const threshold = GRADE_THRESHOLDS.find((t) => composite >= t.min) ?? GRADE_THRESHOLDS[GRADE_THRESHOLDS.length - 1];
+
+  return { grade: threshold.grade, color: threshold.color, score: Math.round(composite) };
+}
+
 function TrendDelta({ current, prior }: { current: number | null; prior: number | null }) {
   if (current === null || current === undefined || prior === null || prior === undefined || prior === 0) return null;
   const pct = ((current - prior) / prior) * 100;
@@ -55,19 +110,20 @@ function TrendDelta({ current, prior }: { current: number | null; prior: number 
   );
 }
 
-function ReportCard({ report, priorAvg, onDelete }: { report: WeeklyReport; priorAvg: PriorAverages; onDelete: () => void }) {
+function ReportCard({ report, priorAvg, onDelete }: { report: WeeklyReport; priorAvg: PriorAverages; onDelete: () => Promise<void> }) {
   const [expanded, setExpanded] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const highlights: string[] = report.ai_highlights ? JSON.parse(report.ai_highlights) : [];
   const weekLabel = `${format(parseISO(report.week_start), 'MMM d')} – ${format(parseISO(report.week_end), 'MMM d, yyyy')}`;
-
   return (
+    <>
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">{weekLabel}</CardTitle>
           <div className="flex items-center gap-1">
             <button
-              onClick={onDelete}
+              onClick={() => setConfirmOpen(true)}
               className="p-1.5 rounded-md hover:bg-[var(--bg-elevated)] transition-colors"
               style={{ color: 'var(--fg-muted)' }}
               title="Delete report"
@@ -112,6 +168,15 @@ function ReportCard({ report, priorAvg, onDelete }: { report: WeeklyReport; prio
         )}
       </CardContent>
     </Card>
+    <ConfirmDialog
+      open={confirmOpen}
+      onOpenChange={setConfirmOpen}
+      title="Delete report"
+      description={`Delete the report for ${weekLabel}? This cannot be undone.`}
+      confirmLabel="Delete"
+      onConfirm={onDelete}
+    />
+    </>
   );
 }
 
@@ -177,7 +242,7 @@ export default function ReportsPage() {
 
   const handleDelete = async (id: number) => {
     await fetch(`/api/reports/${id}`, { method: 'DELETE' });
-    mutate();
+    await mutate();
   };
 
   return (

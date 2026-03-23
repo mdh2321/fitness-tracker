@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { useTheme } from '@/components/providers/theme-provider';
 
@@ -28,28 +28,31 @@ export function TrendBar({ data, color = '#00d26a', label = 'Value', period = 'd
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={chartData} margin={{ top: 10, right: 10, bottom: 5, left: 5 }} barCategoryGap="20%">
+        <CartesianGrid strokeDasharray="3 3" stroke={ct.tooltipBorder} vertical={false} />
         <XAxis
           dataKey="label"
           axisLine={false}
           tickLine={false}
           tick={{ fill: ct.tick, fontSize: 11 }}
-          interval="preserveStartEnd"
+          interval={0}
         />
         <YAxis hide />
         <Tooltip
-          cursor={{ fill: 'rgba(128,128,128,0.08)' }}
+          cursor={{ fill: 'rgba(128,128,128,0.06)', radius: 4 }}
           contentStyle={{
             backgroundColor: ct.tooltipBg,
             border: `1px solid ${ct.tooltipBorder}`,
-            borderRadius: '8px',
+            borderRadius: '10px',
             color: ct.tooltipColor,
             fontSize: '12px',
+            padding: '8px 12px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
           }}
           formatter={(value: unknown) => [formatter ? formatter(Number(value)) : Number(value).toFixed(1), label]}
         />
-        <Bar dataKey="value" fill={color} fillOpacity={0.85} radius={[4, 4, 0, 0]} maxBarSize={32} />
+        <Bar dataKey="value" fill={color} fillOpacity={0.9} radius={[6, 6, 0, 0]} maxBarSize={36} />
       </BarChart>
     </ResponsiveContainer>
   );

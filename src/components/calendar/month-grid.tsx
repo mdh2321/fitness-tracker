@@ -89,16 +89,16 @@ export function MonthGrid({
   return (
     <div>
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 gap-1 mb-1">
+      <div className="grid grid-cols-7 gap-0.5 mb-0.5">
         {WEEKDAYS.map((d) => (
-          <div key={d} className="text-center text-[10px] font-medium py-1" style={{ color: 'var(--fg-muted)' }}>
-            {d}
+          <div key={d} className="text-center text-[10px] font-medium uppercase tracking-wider py-1" style={{ color: 'var(--fg-muted)' }}>
+            {d.charAt(0)}
           </div>
         ))}
       </div>
 
       {/* Day cells */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5">
         {days.map((day) => (
           <DayCell
             key={day.date}
@@ -112,18 +112,13 @@ export function MonthGrid({
 
       {/* Workout icon key */}
       {workoutKey.length > 0 && (
-        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
+        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
           {workoutKey.map(({ name, color }) => {
             const Icon = getWorkoutIcon(name);
             return (
-              <div key={name} className="flex items-center gap-1.5">
-                <div
-                  className="w-5 h-5 rounded-full flex items-center justify-center"
-                  style={{ background: `${color}20` }}
-                >
-                  <Icon className="w-2.5 h-2.5" style={{ color }} />
-                </div>
-                <span className="text-[10px] font-medium" style={{ color: 'var(--fg-muted)' }}>{name}</span>
+              <div key={name} className="flex items-center gap-1">
+                <Icon className="w-3 h-3" style={{ color }} />
+                <span className="text-[9px] font-medium" style={{ color: 'var(--fg-muted)' }}>{name}</span>
               </div>
             );
           })}

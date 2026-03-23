@@ -32,9 +32,17 @@ interface ProfileStats {
 const STAT_LABELS: Record<string, string> = {
   STR: 'Strength',
   END: 'Endurance',
-  REC: 'Sleep',
+  REC: 'Recovery',
   NUT: 'Nutrition',
   DSC: 'Discipline',
+};
+
+const STAT_COLORS: Record<string, string> = {
+  STR: '#8b5cf6',
+  END: '#00d26a',
+  REC: '#00bcd4',
+  NUT: '#f59e0b',
+  DSC: '#ff6b35',
 };
 
 export default function ProfilePage() {
@@ -148,27 +156,31 @@ export default function ProfilePage() {
           </div>
 
           {/* Level progression strip */}
-          <div className="mt-5 flex items-center gap-1 overflow-x-auto pb-1">
-            {LEVEL_DEFINITIONS.map((def) => (
-              <div
-                key={def.level}
-                className="flex flex-col items-center flex-shrink-0"
-                style={{ opacity: def.level <= level ? 1 : 0.3 }}
-              >
+          <div className="mt-5 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--fg-muted)' }}>Progression</p>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              {LEVEL_DEFINITIONS.map((def) => (
                 <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
-                  style={{
-                    background: def.level <= level ? `${def.color}20` : 'var(--bg-elevated)',
-                    border: def.level === level ? `2px solid ${def.color}` : '2px solid transparent',
-                  }}
+                  key={def.level}
+                  className="flex flex-col items-center flex-shrink-0"
+                  style={{ opacity: def.level <= level ? 1 : 0.3 }}
                 >
-                  {def.icon}
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-sm transition-all"
+                    style={{
+                      background: def.level <= level ? `${def.color}20` : 'var(--bg-elevated)',
+                      border: def.level === level ? `2px solid ${def.color}` : '2px solid transparent',
+                      boxShadow: def.level === level ? `0 0 8px ${def.color}30` : 'none',
+                    }}
+                  >
+                    {def.icon}
+                  </div>
+                  <span className="text-[8px] mt-0.5 font-semibold" style={{ color: def.level === level ? def.color : def.level <= level ? 'var(--fg-muted)' : 'var(--border)' }}>
+                    {def.level}
+                  </span>
                 </div>
-                <span className="text-[8px] mt-0.5 font-medium" style={{ color: def.level <= level ? 'var(--fg-muted)' : 'var(--border)' }}>
-                  {def.level}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -181,11 +193,11 @@ export default function ProfilePage() {
         <CardContent>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
-                <PolarGrid stroke="var(--border)" />
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
+                <PolarGrid stroke="var(--border)" strokeOpacity={0.5} />
                 <PolarAngleAxis
-                  dataKey="stat"
-                  tick={{ fill: 'var(--fg-muted)', fontSize: 12, fontWeight: 600 }}
+                  dataKey="label"
+                  tick={{ fill: 'var(--fg-muted)', fontSize: 11, fontWeight: 600 }}
                 />
                 <PolarRadiusAxis
                   angle={90}
@@ -197,18 +209,19 @@ export default function ProfilePage() {
                   dataKey="value"
                   stroke="var(--accent)"
                   fill="var(--accent)"
-                  fillOpacity={0.2}
-                  strokeWidth={2}
+                  fillOpacity={0.15}
+                  strokeWidth={2.5}
+                  dot={{ r: 4, fill: 'var(--accent)', stroke: 'var(--bg-card)', strokeWidth: 2 }}
                 />
               </RadarChart>
             </ResponsiveContainer>
           </div>
           {/* Stat breakdown */}
-          <div className="grid grid-cols-5 gap-2 mt-2">
+          <div className="grid grid-cols-5 gap-2 mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
             {radarData.map((s) => (
               <div key={s.stat} className="text-center">
-                <div className="text-lg font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{s.value}</div>
-                <div className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>{s.label}</div>
+                <div className="text-lg font-bold tabular-nums" style={{ color: STAT_COLORS[s.stat] }}>{s.value}</div>
+                <div className="text-[10px] font-medium" style={{ color: 'var(--fg-muted)' }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -252,15 +265,20 @@ export default function ProfilePage() {
                 <button
                   key={slotIdx}
                   onClick={() => { setPinSlotIndex(slotIdx); setPinPickerOpen(true); }}
-                  className="flex-1 rounded-xl p-4 text-center transition-colors"
+                  className="flex-1 rounded-xl p-4 text-center transition-all hover:border-[var(--fg-muted)] group"
                   style={{
                     background: 'transparent',
                     border: '2px dashed var(--border)',
                     color: 'var(--fg-muted)',
                   }}
                 >
-                  <span className="text-2xl">+</span>
-                  <p className="text-[10px] mt-1">Pin Badge</p>
+                  <div
+                    className="w-10 h-10 rounded-full mx-auto flex items-center justify-center transition-colors group-hover:bg-[var(--bg-hover)]"
+                    style={{ background: 'var(--bg-elevated)' }}
+                  >
+                    <span className="text-lg">+</span>
+                  </div>
+                  <p className="text-[10px] mt-2 font-medium">Pin Badge</p>
                 </button>
               );
             })}
@@ -310,64 +328,37 @@ export default function ProfilePage() {
           <CardTitle className="text-sm">Lifetime Stats</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--bg-elevated)' }}>
-                <Dumbbell className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-              </div>
-              <div>
-                <div className="text-lg font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{lifetime?.totalWorkouts ?? 0}</div>
-                <div className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>Workouts</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--bg-elevated)' }}>
-                <Clock className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-              </div>
-              <div>
-                <div className="text-lg font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{lifetime?.totalHours ?? 0}<span className="text-xs font-normal" style={{ color: 'var(--fg-muted)' }}>h</span></div>
-                <div className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>Total Time</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--bg-elevated)' }}>
-                <Flame className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-              </div>
-              <div>
-                <div className="text-lg font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{lifetime?.avgStrain ?? 0}</div>
-                <div className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>Avg Strain</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--bg-elevated)' }}>
-                <Footprints className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-              </div>
-              <div>
-                <div className="text-lg font-bold tabular-nums" style={{ color: 'var(--fg)' }}>
-                  {lifetime ? (lifetime.totalSteps >= 1000000 ? `${(lifetime.totalSteps / 1000000).toFixed(1)}M` : `${Math.round(lifetime.totalSteps / 1000)}k`) : 0}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[
+              { icon: Dumbbell, color: '#8b5cf6', value: String(lifetime?.totalWorkouts ?? 0), label: 'Workouts' },
+              { icon: Clock, color: '#00bcd4', value: `${lifetime?.totalHours ?? 0}h`, label: 'Total Time' },
+              { icon: Flame, color: '#00d26a', value: String(lifetime?.avgStrain ?? 0), label: 'Avg Strain' },
+              { icon: Footprints, color: '#ff6b35', value: lifetime ? (lifetime.totalSteps >= 1000000 ? `${(lifetime.totalSteps / 1000000).toFixed(1)}M` : `${Math.round(lifetime.totalSteps / 1000)}k`) : '0', label: 'Total Steps' },
+              { icon: CalendarDays, color: '#f59e0b', value: String(lifetime?.activeDays ?? 0), label: 'Active Days' },
+            ].map((stat) => (
+              <div key={stat.label} className="flex items-center gap-3 p-2.5 rounded-xl" style={{ background: 'var(--bg-elevated)' }}>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: `${stat.color}15` }}
+                >
+                  <stat.icon className="w-4 h-4" style={{ color: stat.color }} />
                 </div>
-                <div className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>Total Steps</div>
+                <div>
+                  <div className="text-lg font-bold tabular-nums leading-tight" style={{ color: 'var(--fg)' }}>{stat.value}</div>
+                  <div className="text-[10px] font-medium" style={{ color: 'var(--fg-muted)' }}>{stat.label}</div>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'var(--bg-elevated)' }}>
-                <CalendarDays className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-              </div>
-              <div>
-                <div className="text-lg font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{lifetime?.activeDays ?? 0}</div>
-                <div className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>Active Days</div>
-              </div>
-            </div>
+            ))}
             {lifetime?.memberSince && (
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg" style={{ background: 'var(--bg-elevated)' }}>
+              <div className="flex items-center gap-3 p-2.5 rounded-xl" style={{ background: 'var(--bg-elevated)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ background: '#ff3b5c15' }}>
                   🏁
                 </div>
                 <div>
-                  <div className="text-sm font-bold" style={{ color: 'var(--fg)' }}>
+                  <div className="text-sm font-bold leading-tight" style={{ color: 'var(--fg)' }}>
                     {format(new Date(lifetime.memberSince), 'MMM yyyy')}
                   </div>
-                  <div className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>Member Since</div>
+                  <div className="text-[10px] font-medium" style={{ color: 'var(--fg-muted)' }}>Member Since</div>
                 </div>
               </div>
             )}

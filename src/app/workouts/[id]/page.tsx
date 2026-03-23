@@ -1,11 +1,12 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWorkout, deleteWorkout } from '@/hooks/use-workouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { getStrainColor, getStrainLabel, getWorkoutColor } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
 import { ArrowLeft, Clock, Flame, Activity, Heart, Trash2 } from 'lucide-react';
@@ -17,9 +18,10 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
   const router = useRouter();
   const { data: workout, isLoading } = useWorkout(id);
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   const handleDelete = async () => {
     if (!workout) return;
-    if (!confirm('Delete this workout?')) return;
     try {
       await deleteWorkout(workout.id);
       toast.success('Workout deleted');
@@ -44,7 +46,7 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
         <Button variant="ghost" onClick={() => router.back()}>
           <ArrowLeft className="mr-1 h-4 w-4" /> Back
         </Button>
-        <Button variant="destructive" size="sm" onClick={handleDelete}>
+        <Button variant="destructive" size="sm" onClick={() => setConfirmOpen(true)}>
           <Trash2 className="mr-1 h-4 w-4" /> Delete
         </Button>
       </div>
@@ -159,6 +161,14 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
           )}
         </CardContent>
       </Card>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete workout"
+        description="This workout and all its data will be permanently deleted."
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

@@ -175,14 +175,14 @@ export interface AccentColor {
 
 export const ACCENT_COLORS: AccentColor[] = [
   { name: 'Arc Green',      hex: '#00d26a', level: 1 },
-  { name: 'Ocean Teal',     hex: '#00bcd4', level: 1 },
-  { name: 'Electric Blue',  hex: '#3b82f6', level: 1 },
-  { name: 'Sunset Orange',  hex: '#ff6b35', level: 1 },
-  { name: 'Hot Pink',       hex: '#ec4899', level: 1 },
-  { name: 'Royal Purple',   hex: '#8b5cf6', level: 1 },
-  { name: 'Crimson',        hex: '#ef4444', level: 1 },
-  { name: 'Gold',           hex: '#eab308', level: 1 },
-  { name: 'Prismatic',      hex: '#00d26a', level: 1, gradient: 'linear-gradient(135deg, #00d26a, #3b82f6, #8b5cf6, #ec4899, #eab308)' },
+  { name: 'Ocean Teal',     hex: '#00bcd4', level: 3 },
+  { name: 'Electric Blue',  hex: '#3b82f6', level: 5 },
+  { name: 'Sunset Orange',  hex: '#ff6b35', level: 6 },
+  { name: 'Hot Pink',       hex: '#ec4899', level: 7 },
+  { name: 'Royal Purple',   hex: '#8b5cf6', level: 8 },
+  { name: 'Crimson',        hex: '#ef4444', level: 9 },
+  { name: 'Gold',           hex: '#eab308', level: 10 },
+  { name: 'Prismatic',      hex: '#00d26a', level: 10, gradient: 'linear-gradient(135deg, #00d26a, #3b82f6, #8b5cf6, #ec4899, #eab308)' },
 ];
 
 export function getUnlockedColors(level: number): AccentColor[] {

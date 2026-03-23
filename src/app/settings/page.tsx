@@ -237,9 +237,11 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Button type="submit" className="w-full">
-          <Save className="mr-2 h-4 w-4" /> Save Settings
-        </Button>
+        <div className="sticky bottom-4 z-10 pt-4">
+          <Button type="submit" className="w-full shadow-lg">
+            <Save className="mr-2 h-4 w-4" /> Save Settings
+          </Button>
+        </div>
       </form>
 
       <ExportCard />

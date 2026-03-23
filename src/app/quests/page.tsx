@@ -18,28 +18,31 @@ function XpHeader({ xp }: { xp: { total: number; level: number; title: string; c
   const shields = xp.streakShields ?? 0;
 
   return (
-    <div className="flex items-center gap-4">
+    <div
+      className="flex items-center gap-4 p-4 rounded-2xl border"
+      style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+    >
       {/* Level circle */}
       <div
-        className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-black flex-shrink-0"
+        className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black flex-shrink-0 shadow-lg"
         style={{ background: 'linear-gradient(135deg, #8b5cf6, var(--accent))', color: 'white' }}
       >
         {xp.level}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-lg font-bold" style={{ color: 'var(--fg)' }}>{xp.title}</span>
-          <span className="text-xs tabular-nums" style={{ color: 'var(--fg-muted)' }}>{xp.total} XP</span>
+          <span className="text-[11px] tabular-nums font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--bg-elevated)', color: 'var(--fg-muted)' }}>{xp.total} XP</span>
           {multiplier > 1 && (
             <span
-              className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
               style={{ background: '#ff6b3520', color: '#ff6b35' }}
             >
               {multiplier}x
             </span>
           )}
           {shields > 0 && (
-            <span className="flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded"
+            <span className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full"
               style={{ background: '#3b82f620', color: '#3b82f6' }}
             >
               <Shield className="w-2.5 h-2.5" /> {shields}
@@ -47,9 +50,9 @@ function XpHeader({ xp }: { xp: { total: number; level: number; title: string; c
           )}
         </div>
         {/* XP progress bar */}
-        <div className="mt-1.5 h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+        <div className="mt-2 h-2.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
           <div
-            className="h-full rounded-full transition-all"
+            className="h-full rounded-full transition-all duration-700 ease-out"
             style={{ width: `${Math.min(progress, 100)}%`, background: 'linear-gradient(90deg, #8b5cf6, var(--accent))' }}
           />
         </div>
@@ -80,58 +83,66 @@ function formatQuestValue(key: string, value: number): string {
 function QuestCard({ quest }: { quest: Quest }) {
   const pct = quest.target > 0 ? Math.min((quest.current / quest.target) * 100, 100) : 0;
   const isCore = quest.type === 'core';
+  const accentColor = quest.completed ? '#00d26a' : isCore ? '#8b5cf6' : '#ff6b35';
 
   const currentDisplay = formatQuestValue(quest.quest_key, quest.current);
   const targetDisplay = formatQuestValue(quest.quest_key, quest.target);
 
   return (
     <div
-      className="p-3 rounded-xl transition-all"
+      className="p-3 rounded-xl transition-all overflow-hidden relative"
       style={{
-        background: quest.completed ? '#00d26a10' : 'var(--bg-card)',
-        border: `1px solid ${quest.completed ? '#00d26a30' : 'var(--border)'}`,
+        background: quest.completed ? '#00d26a08' : 'var(--bg-card)',
+        border: `1px solid ${quest.completed ? '#00d26a25' : 'var(--border)'}`,
       }}
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            {isCore ? (
-              <Target className="w-3 h-3 flex-shrink-0" style={{ color: '#8b5cf6' }} />
-            ) : (
-              <Sparkles className="w-3 h-3 flex-shrink-0" style={{ color: '#ff6b35' }} />
-            )}
-            <span className="text-sm font-semibold truncate" style={{ color: 'var(--fg)' }}>{quest.title}</span>
+      {/* Left accent bar */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl"
+        style={{ background: accentColor, opacity: quest.completed ? 1 : 0.5 }}
+      />
+      <div className="pl-2">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              {isCore ? (
+                <Target className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#8b5cf6' }} />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#ff6b35' }} />
+              )}
+              <span className="text-sm font-semibold truncate" style={{ color: 'var(--fg)' }}>{quest.title}</span>
+            </div>
+            <p className="text-[11px] mt-0.5 ml-5" style={{ color: 'var(--fg-muted)' }}>{quest.description}</p>
           </div>
-          <p className="text-[11px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{quest.description}</p>
+          <span
+            className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+            style={{
+              background: quest.completed ? '#00d26a20' : `${accentColor}15`,
+              color: quest.completed ? 'var(--accent)' : accentColor,
+            }}
+          >
+            {quest.completed ? '✓ Done' : `${quest.xp_reward} XP`}
+          </span>
         </div>
-        <span
-          className="text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0"
-          style={{
-            background: quest.completed ? '#00d26a20' : 'var(--bg-elevated)',
-            color: quest.completed ? 'var(--accent)' : 'var(--fg-muted)',
-          }}
-        >
-          {quest.completed ? 'Done' : `${quest.xp_reward} XP`}
-        </span>
-      </div>
 
-      {/* Progress bar */}
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
-        <div
-          className="h-full rounded-full transition-all"
-          style={{
-            width: `${pct}%`,
-            background: quest.completed ? 'var(--accent)' : isCore ? '#8b5cf6' : '#ff6b35',
-          }}
-        />
-      </div>
-      <div className="flex justify-between mt-1">
-        <span className="text-[10px] tabular-nums" style={{ color: 'var(--fg-muted)' }}>
-          {currentDisplay} / {targetDisplay}
-        </span>
-        <span className="text-[10px] tabular-nums font-medium" style={{ color: quest.completed ? 'var(--accent)' : 'var(--fg-muted)' }}>
-          {Math.round(pct)}%
-        </span>
+        {/* Progress bar */}
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+          <div
+            className="h-full rounded-full transition-all duration-500 ease-out"
+            style={{
+              width: `${pct}%`,
+              background: accentColor,
+            }}
+          />
+        </div>
+        <div className="flex justify-between mt-1">
+          <span className="text-[10px] tabular-nums" style={{ color: 'var(--fg-muted)' }}>
+            {currentDisplay} / {targetDisplay}
+          </span>
+          <span className="text-[10px] tabular-nums font-medium" style={{ color: quest.completed ? 'var(--accent)' : 'var(--fg-muted)' }}>
+            {Math.round(pct)}%
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -139,48 +150,56 @@ function QuestCard({ quest }: { quest: Quest }) {
 
 function DailyQuestCard({ quest }: { quest: DailyQuest }) {
   const pct = quest.target > 0 ? Math.min((quest.current / quest.target) * 100, 100) : 0;
+  const accentColor = quest.completed ? '#00d26a' : '#fbbf24';
   const currentDisplay = formatQuestValue(quest.quest_key, quest.current);
   const targetDisplay = formatQuestValue(quest.quest_key, quest.target);
 
   return (
     <div
-      className="p-3 rounded-xl transition-all"
+      className="p-3 rounded-xl transition-all overflow-hidden relative"
       style={{
-        background: quest.completed ? '#00d26a10' : 'var(--bg-card)',
-        border: `1px solid ${quest.completed ? '#00d26a30' : 'var(--border)'}`,
+        background: quest.completed ? '#00d26a08' : 'var(--bg-card)',
+        border: `1px solid ${quest.completed ? '#00d26a25' : 'var(--border)'}`,
       }}
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <Sun className="w-3 h-3 flex-shrink-0" style={{ color: '#fbbf24' }} />
-            <span className="text-sm font-semibold truncate" style={{ color: 'var(--fg)' }}>{quest.title}</span>
+      {/* Left accent bar */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl"
+        style={{ background: accentColor, opacity: quest.completed ? 1 : 0.5 }}
+      />
+      <div className="pl-2">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <Sun className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#fbbf24' }} />
+              <span className="text-sm font-semibold truncate" style={{ color: 'var(--fg)' }}>{quest.title}</span>
+            </div>
+            <p className="text-[11px] mt-0.5 ml-5" style={{ color: 'var(--fg-muted)' }}>{quest.description}</p>
           </div>
-          <p className="text-[11px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{quest.description}</p>
+          <span
+            className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+            style={{
+              background: quest.completed ? '#00d26a20' : '#fbbf2415',
+              color: quest.completed ? 'var(--accent)' : '#fbbf24',
+            }}
+          >
+            {quest.completed ? '✓ Done' : `${quest.xp_reward} XP`}
+          </span>
         </div>
-        <span
-          className="text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0"
-          style={{
-            background: quest.completed ? '#00d26a20' : 'var(--bg-elevated)',
-            color: quest.completed ? 'var(--accent)' : 'var(--fg-muted)',
-          }}
-        >
-          {quest.completed ? 'Done' : `${quest.xp_reward} XP`}
-        </span>
-      </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
-        <div
-          className="h-full rounded-full transition-all"
-          style={{ width: `${pct}%`, background: quest.completed ? 'var(--accent)' : '#fbbf24' }}
-        />
-      </div>
-      <div className="flex justify-between mt-1">
-        <span className="text-[10px] tabular-nums" style={{ color: 'var(--fg-muted)' }}>
-          {currentDisplay} / {targetDisplay}
-        </span>
-        <span className="text-[10px] tabular-nums font-medium" style={{ color: quest.completed ? 'var(--accent)' : 'var(--fg-muted)' }}>
-          {Math.round(pct)}%
-        </span>
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+          <div
+            className="h-full rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${pct}%`, background: accentColor }}
+          />
+        </div>
+        <div className="flex justify-between mt-1">
+          <span className="text-[10px] tabular-nums" style={{ color: 'var(--fg-muted)' }}>
+            {currentDisplay} / {targetDisplay}
+          </span>
+          <span className="text-[10px] tabular-nums font-medium" style={{ color: quest.completed ? 'var(--accent)' : 'var(--fg-muted)' }}>
+            {Math.round(pct)}%
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -241,8 +260,8 @@ export default function QuestsPage() {
 
       {/* Tab toggle */}
       <div
-        className="flex rounded-lg overflow-hidden w-fit"
-        style={{ border: '1px solid var(--border)' }}
+        className="flex rounded-xl p-1 w-fit gap-0.5"
+        style={{ background: 'var(--bg-elevated)' }}
       >
         {([
           { key: 'quests' as Tab, label: 'Quests' },
@@ -252,10 +271,11 @@ export default function QuestsPage() {
           <button
             key={key}
             onClick={() => setTab(key)}
-            className="px-4 py-1.5 text-xs font-medium transition-colors"
+            className="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all"
             style={{
-              background: tab === key ? 'var(--bg-elevated)' : 'transparent',
+              background: tab === key ? 'var(--bg-card)' : 'transparent',
               color: tab === key ? 'var(--fg)' : 'var(--fg-muted)',
+              boxShadow: tab === key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
             }}
           >
             {label}
@@ -397,22 +417,22 @@ export default function QuestsPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {xpData.history.map((entry) => (
                 <div
                   key={entry.id}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
-                  style={{ background: 'var(--bg-card)' }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl border"
+                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
                 >
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                    style={{ background: '#00d26a20', color: 'var(--accent)' }}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    style={{ background: '#00d26a15', color: 'var(--accent)' }}
                   >
                     +{entry.amount}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: 'var(--fg)' }}>{entry.description}</p>
-                    <p className="text-[10px]" style={{ color: 'var(--fg-muted)' }}>{entry.date}</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--fg-muted)' }}>{entry.date}</p>
                   </div>
                 </div>
               ))}

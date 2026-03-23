@@ -12,7 +12,6 @@ import {
   Settings,
   Salad,
   Moon,
-  CalendarDays,
   FileText,
   User,
 } from 'lucide-react';
@@ -22,7 +21,6 @@ const navItems = [
   { href: '/workouts', label: 'Workouts', icon: Dumbbell },
   { href: '/nutrition', label: 'Nutrition', icon: Salad },
   { href: '/sleep', label: 'Sleep', icon: Moon },
-  { href: '/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/reports', label: 'Reports', icon: FileText },
   { href: '/quests', label: 'Quests', icon: Target },
   { href: '/profile', label: 'Profile', icon: User },

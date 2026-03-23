@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Trash2, Salad } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { MealEntry } from '@/hooks/use-nutrition';
 
 interface MealListProps {
@@ -29,52 +30,52 @@ function MealRow({
   onDelete: (id: number) => Promise<void>;
   disabled?: boolean;
 }) {
-  const [deleting, setDeleting] = useState(false);
-
-  const handleDelete = async () => {
-    if (deleting) return;
-    setDeleting(true);
-    try {
-      await onDelete(meal.id);
-    } finally {
-      setDeleting(false);
-    }
-  };
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
-    <li
-      className="group flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors"
-      style={{ background: 'var(--bg-elevated)' }}
-    >
-      {/* Index badge */}
-      <span
-        className="shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold tabular-nums"
-        style={{ background: 'rgba(0,210,106,0.12)', color: '#00d26a' }}
+    <>
+      <li
+        className="group flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors"
+        style={{ background: 'var(--bg-elevated)' }}
       >
-        {index + 1}
-      </span>
-
-      {/* Description */}
-      <span className="flex-1 text-sm leading-snug" style={{ color: 'var(--fg)' }}>
-        {meal.description}
-      </span>
-
-      {/* Time + delete */}
-      <div className="shrink-0 flex items-center gap-2 mt-0.5">
-        <span className="text-[11px] tabular-nums" style={{ color: 'var(--fg-muted)' }}>
-          {formatTime(meal.logged_at)}
-        </span>
-        <button
-          onClick={handleDelete}
-          disabled={disabled || deleting}
-          className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-0.5 rounded hover:text-[#ff3b5c] disabled:pointer-events-none"
-          style={{ color: 'var(--fg-muted)' }}
-          aria-label="Delete meal"
+        {/* Index badge */}
+        <span
+          className="shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold tabular-nums"
+          style={{ background: 'rgba(0,210,106,0.12)', color: '#00d26a' }}
         >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    </li>
+          {index + 1}
+        </span>
+
+        {/* Description */}
+        <span className="flex-1 text-sm leading-snug" style={{ color: 'var(--fg)' }}>
+          {meal.description}
+        </span>
+
+        {/* Time + delete */}
+        <div className="shrink-0 flex items-center gap-2 mt-0.5">
+          <span className="text-[11px] tabular-nums" style={{ color: 'var(--fg-muted)' }}>
+            {formatTime(meal.logged_at)}
+          </span>
+          <button
+            onClick={() => setConfirmOpen(true)}
+            disabled={disabled}
+            className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-0.5 rounded hover:text-[#ff3b5c] disabled:pointer-events-none"
+            style={{ color: 'var(--fg-muted)' }}
+            aria-label="Delete meal"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </li>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete meal"
+        description="This meal entry will be removed and your nutrition score will be recalculated."
+        confirmLabel="Delete"
+        onConfirm={() => onDelete(meal.id)}
+      />
+    </>
   );
 }
 

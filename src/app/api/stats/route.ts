@@ -126,11 +126,13 @@ export async function GET(request: NextRequest) {
   }
   const weeklyStreak = calculateWeeklyGoalStreak(weekHistory);
 
-  // Last 7 days strain
+  // Last 7 days strain + sleep + nutrition (previous 7 days, excluding today)
   const last7Days = [];
-  for (let i = 6; i >= 0; i--) {
+  for (let i = 7; i >= 1; i--) {
     const date = format(subDays(now, i), 'yyyy-MM-dd');
     const strain = await db.select().from(dailyStrain).where(eq(dailyStrain.date, date)).get();
+    const sleep = await db.select().from(dailySleep).where(eq(dailySleep.date, date)).get();
+    const nutrition = await db.select().from(dailyNutrition).where(eq(dailyNutrition.date, date)).get();
     last7Days.push({
       date,
       strain_score: strain?.strain_score || 0,
@@ -139,8 +141,33 @@ export async function GET(request: NextRequest) {
       total_volume: strain?.total_volume || 0,
       total_calories: strain?.total_calories || 0,
       steps: strain?.steps || 0,
+      sleep_minutes: sleep?.total_minutes || 0,
+      nutrition_score: nutrition?.nutrition_score || 0,
     });
   }
+
+  // Previous 7 days for trend comparison (days 8-14 ago)
+  const prev7Days = [];
+  for (let i = 14; i >= 8; i--) {
+    const date = format(subDays(now, i), 'yyyy-MM-dd');
+    const strain = await db.select().from(dailyStrain).where(eq(dailyStrain.date, date)).get();
+    const sleep = await db.select().from(dailySleep).where(eq(dailySleep.date, date)).get();
+    const nutrition = await db.select().from(dailyNutrition).where(eq(dailyNutrition.date, date)).get();
+    prev7Days.push({
+      strain_score: strain?.strain_score || 0,
+      steps: strain?.steps || 0,
+      sleep_minutes: sleep?.total_minutes || 0,
+      nutrition_score: nutrition?.nutrition_score || 0,
+    });
+  }
+
+  const avg = (arr: number[]) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+  const trendComparison = {
+    strain: { current: avg(last7Days.map(d => d.strain_score)), previous: avg(prev7Days.map(d => d.strain_score)) },
+    steps: { current: avg(last7Days.map(d => d.steps)), previous: avg(prev7Days.map(d => d.steps)) },
+    sleep: { current: avg(last7Days.map(d => d.sleep_minutes)), previous: avg(prev7Days.map(d => d.sleep_minutes)) },
+    nutrition: { current: avg(last7Days.map(d => d.nutrition_score)), previous: avg(prev7Days.map(d => d.nutrition_score)) },
+  };
 
   // Current month data for streaks month view
   const monthStartDate = startOfMonth(now);
@@ -264,5 +291,6 @@ export async function GET(request: NextRequest) {
     nutritionQualifyingDates,
     exerciseQualifyingDates,
     metrics,
+    trendComparison,
   });
 }

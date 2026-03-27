@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getWorkoutColor } from '@/lib/constants';
-import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, isWithinInterval } from 'date-fns';
 import type { Workout } from '@/lib/types';
 import type { WorkoutType } from '@/lib/constants';
 
@@ -128,6 +128,11 @@ export function FitnessSummary({ workouts }: FitnessSummaryProps) {
     );
   }, [workouts]);
 
+  const yearWorkouts = useMemo(() => {
+    const start = startOfYear(now);
+    return workouts.filter((w) => parseISO(w.started_at) >= start);
+  }, [workouts]);
+
   return (
     <Card>
       <CardHeader>
@@ -156,7 +161,7 @@ export function FitnessSummary({ workouts }: FitnessSummaryProps) {
           <TabsList>
             <TabsTrigger value="week">This Week</TabsTrigger>
             <TabsTrigger value="month">This Month</TabsTrigger>
-            <TabsTrigger value="all">All Time</TabsTrigger>
+            <TabsTrigger value="year">This Year</TabsTrigger>
           </TabsList>
           <TabsContent value="week" className="mt-4">
             <BreakdownView workouts={weekWorkouts} mode={mode} />
@@ -164,8 +169,8 @@ export function FitnessSummary({ workouts }: FitnessSummaryProps) {
           <TabsContent value="month" className="mt-4">
             <BreakdownView workouts={monthWorkouts} mode={mode} />
           </TabsContent>
-          <TabsContent value="all" className="mt-4">
-            <BreakdownView workouts={workouts} mode={mode} />
+          <TabsContent value="year" className="mt-4">
+            <BreakdownView workouts={yearWorkouts} mode={mode} />
           </TabsContent>
         </Tabs>
 

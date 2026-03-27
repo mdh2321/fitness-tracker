@@ -1,67 +1,93 @@
 'use client';
 
 import Link from 'next/link';
-import { Card } from '@/components/ui/card';
-import { getStrainColor, getStrainLabel, getWorkoutColor } from '@/lib/constants';
+import { getStrainColor, getWorkoutColor } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
-import { Clock, Flame, Activity, Heart, ChevronRight, Footprints } from 'lucide-react';
+import { Clock, Flame, Heart, ChevronRight, Footprints, Route } from 'lucide-react';
 import type { Workout } from '@/lib/types';
 import type { WorkoutType } from '@/lib/constants';
 
-export function WorkoutCard({ workout, isPassive }: { workout: Workout; isPassive?: boolean }) {
+export function WorkoutCard({ workout }: { workout: Workout }) {
+  const color = getWorkoutColor(workout.name, workout.type as WorkoutType);
+  const isWalking = workout.name === 'Walking';
+
   return (
     <Link href={`/workouts/${workout.id}`}>
-      <Card
-        className={`transition-colors cursor-pointer overflow-hidden${isPassive ? ' opacity-70' : ''}`}
-        style={{ borderLeftColor: getWorkoutColor(workout.name, workout.type as WorkoutType), borderLeftWidth: '3px' }}
+      <div
+        className="flex items-center gap-4 px-4 py-3 rounded-xl border transition-colors cursor-pointer group"
+        style={{
+          background: 'var(--bg-card)',
+          borderColor: 'var(--border)',
+        }}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-base font-semibold truncate" style={{ color: 'var(--fg)' }}>{workout.name}</h3>
-              {isPassive && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#00bcd4]/10 text-[#00bcd4] leading-none">Active Time</span>
-              )}
-            </div>
-            <p className="text-sm" style={{ color: 'var(--fg-secondary)' }}>
-              {format(parseISO(workout.started_at), 'MMM d, yyyy · h:mm a')}
-            </p>
-            <div className="flex items-center gap-4 mt-2">
-              <span className="flex items-center gap-1 text-sm" style={{ color: 'var(--fg-secondary)' }}>
-                {isPassive ? <Footprints className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
-                {workout.duration_minutes}m
-              </span>
-              {workout.source === 'manual' && (
-                <span className="flex items-center gap-1 text-sm" style={{ color: 'var(--fg-secondary)' }}>
-                  <Activity className="h-3.5 w-3.5" />
-                  RPE {workout.perceived_effort}
-                </span>
-              )}
-              {workout.source === 'apple_health' && workout.avg_heart_rate && (
-                <span className="flex items-center gap-1 text-sm" style={{ color: 'var(--fg-secondary)' }}>
-                  <Heart className="h-3.5 w-3.5 text-[#ff3b5c]" />
-                  {workout.avg_heart_rate} bpm
-                </span>
-              )}
-              {workout.calories && (
-                <span className="flex items-center gap-1 text-sm" style={{ color: 'var(--fg-secondary)' }}>
-                  <Flame className="h-3.5 w-3.5" />
-                  {workout.calories} kcal
-                </span>
-              )}
-            </div>
+        {/* Color dot */}
+        <div
+          className="w-2 h-2 rounded-full flex-shrink-0"
+          style={{ backgroundColor: color }}
+        />
+
+        {/* Name + date */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium truncate" style={{ color: 'var(--fg)' }}>
+              {workout.name}
+            </span>
+            <span className="text-xs" style={{ color: 'var(--fg-muted)' }}>
+              {format(parseISO(workout.started_at), 'MMM d · h:mm a')}
+            </span>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <div className="text-2xl font-bold tabular-nums" style={{ color: getStrainColor(workout.strain_score) }}>
-                {workout.strain_score.toFixed(1)}
-              </div>
-              <div className="text-xs" style={{ color: 'var(--fg-muted)' }}>{getStrainLabel(workout.strain_score)}</div>
-            </div>
-            <ChevronRight className="h-5 w-5" style={{ color: 'var(--fg-muted)' }} />
+
+          {/* Stats row */}
+          <div className="flex items-center gap-3 mt-1">
+            <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--fg-muted)' }}>
+              {isWalking ? <Footprints className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+              {workout.duration_minutes}m
+            </span>
+            {workout.avg_heart_rate && (
+              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--fg-muted)' }}>
+                <Heart className="h-3 w-3" />
+                {workout.avg_heart_rate}
+              </span>
+            )}
+            {workout.distance_km != null && workout.distance_km > 0 && (
+              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--fg-muted)' }}>
+                <Route className="h-3 w-3" />
+                {workout.distance_km.toFixed(2)} km
+              </span>
+            )}
+            {workout.distance_km != null && workout.distance_km > 0 && workout.duration_minutes > 0 && (
+              <span className="text-xs" style={{ color: 'var(--fg-muted)' }}>
+                {(() => {
+                  const pace = workout.duration_minutes / workout.distance_km!;
+                  const mins = Math.floor(pace);
+                  const secs = Math.round((pace - mins) * 60);
+                  return `${mins}:${secs.toString().padStart(2, '0')} /km`;
+                })()}
+              </span>
+            )}
+            {workout.calories != null && workout.calories > 0 && (
+              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--fg-muted)' }}>
+                <Flame className="h-3 w-3" />
+                {workout.calories}
+              </span>
+            )}
           </div>
         </div>
-      </Card>
+
+        {/* Strain + chevron */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span
+            className="text-lg font-bold tabular-nums"
+            style={{ color: getStrainColor(workout.strain_score) }}
+          >
+            {workout.strain_score.toFixed(1)}
+          </span>
+          <ChevronRight
+            className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+            style={{ color: 'var(--fg-muted)' }}
+          />
+        </div>
+      </div>
     </Link>
   );
 }

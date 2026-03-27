@@ -12,6 +12,7 @@ export interface Workout {
   max_heart_rate: number | null;
   calories: number | null;
   strain_score: number;
+  distance_km: number | null;
   notes: string | null;
   source: 'manual' | 'apple_health';
   apple_health_id: string | null;

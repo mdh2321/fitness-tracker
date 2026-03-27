@@ -118,6 +118,23 @@ function extractQty(val: unknown): number | null {
   return null;
 }
 
+// Extract distance in km, converting from miles if needed
+function extractDistanceKm(val: unknown): number | null {
+  if (val == null) return null;
+  if (typeof val === 'number') return val;
+  if (typeof val === 'object' && val !== null && 'qty' in val) {
+    const qty = Number((val as { qty: unknown }).qty);
+    if (isNaN(qty) || qty <= 0) return null;
+    const units = (val as { units?: unknown }).units;
+    if (typeof units === 'string' && units.toLowerCase() === 'mi') {
+      return Math.round(qty * 1.60934 * 100) / 100;
+    }
+    // Assume km (or m — Health Auto Export typically sends km)
+    return Math.round(qty * 100) / 100;
+  }
+  return null;
+}
+
 // Extract calories as kcal, converting from kJ if needed (AutoExport sends kJ)
 function extractKcal(val: unknown): number | null {
   if (val == null) return null;
@@ -223,11 +240,21 @@ export async function POST(request: NextRequest) {
     // Deduplicate by apple_health_id (v2 sends a UUID as "id")
     if (w.id) {
       const existing = await db
-        .select({ id: workouts.id })
+        .select({ id: workouts.id, distance_km: workouts.distance_km })
         .from(workouts)
         .where(eq(workouts.apple_health_id, String(w.id)))
         .get();
-      if (existing) { skippedWorkouts++; continue; }
+      if (existing) {
+        // Backfill distance_km if missing on existing workout
+        if (existing.distance_km == null) {
+          const dist = extractDistanceKm(w.totalDistance) ?? extractDistanceKm(w.distance);
+          if (dist != null) {
+            await db.update(workouts).set({ distance_km: dist }).where(eq(workouts.id, existing.id));
+            console.log(`[Apple Health Sync] Backfilled distance_km=${dist} for workout ${existing.id}`);
+          }
+        }
+        skippedWorkouts++; continue;
+      }
     }
 
     // Health Auto Export uses "name" for the workout type display name
@@ -289,6 +316,9 @@ export async function POST(request: NextRequest) {
 
     const dateKey: string = localDate;
 
+    // Distance: Health Auto Export sends "totalDistance" as { qty, units }
+    const distanceKm = extractDistanceKm(w.totalDistance) ?? extractDistanceKm(w.distance);
+
     // Calories: v1 uses "totalEnergy" or "activeEnergy" (scalar), v2 uses "activeEnergyBurned"
     // AutoExport may send kJ — extractKcal handles unit conversion
     const caloriesQty =
@@ -307,6 +337,7 @@ export async function POST(request: NextRequest) {
       avg_heart_rate: avgHR,
       max_heart_rate: maxHR,
       calories: caloriesQty != null ? Math.round(caloriesQty) : null,
+      distance_km: distanceKm,
       strain_score: strainScore,
       source: 'apple_health',
       apple_health_id: w.id ? String(w.id) : null,

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2, ChevronRight, Dumbbell, Activity, Zap, Moon, Salad, Footprints } from 'lucide-react';
-import { format, startOfWeek, endOfWeek } from 'date-fns';
+import { format, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import Link from 'next/link';
 import { useReportsList, type WeeklyReport } from '@/hooks/use-reports';
 
@@ -17,7 +17,10 @@ export function WeeklySummaryCard() {
   const weekEnd = format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
   const weekLabel = `${format(startOfWeek(now, { weekStartsOn: 1 }), 'MMM d')} – ${format(endOfWeek(now, { weekStartsOn: 1 }), 'MMM d')}`;
 
-  const report = reports?.find((r) => r.week_start === weekStart);
+  const currentWeekReport = reports?.find((r) => r.week_start === weekStart);
+  const latestReport = reports?.[0]; // reports are ordered DESC by week_start
+  const report = currentWeekReport ?? latestReport;
+  const isCurrentWeek = report?.week_start === weekStart;
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -44,7 +47,11 @@ export function WeeklySummaryCard() {
               <Sparkles className="h-4 w-4" style={{ color: 'var(--accent)' }} />
               Your Week
             </CardTitle>
-            <p className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>{weekLabel}</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>
+              {report && !isCurrentWeek
+                ? `${format(parseISO(report.week_start), 'MMM d')} – ${format(parseISO(report.week_end), 'MMM d')}`
+                : weekLabel}
+            </p>
           </div>
           <Link href="/reports" className="flex items-center gap-1 text-xs hover:underline" style={{ color: 'var(--fg-muted)' }}>
             All reports <ChevronRight className="h-3 w-3" />
@@ -94,6 +101,19 @@ export function WeeklySummaryCard() {
                   </li>
                 ))}
               </ul>
+            )}
+
+            {/* Generate current week if showing an older report */}
+            {!isCurrentWeek && (
+              <div className="pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                <Button variant="ghost" size="sm" onClick={handleGenerate} disabled={generating} className="w-full">
+                  {generating ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
+                  ) : (
+                    <><Sparkles className="mr-2 h-4 w-4" /> Generate this week&apos;s summary</>
+                  )}
+                </Button>
+              </div>
             )}
           </div>
         )}

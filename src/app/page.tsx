@@ -10,6 +10,7 @@ import { DashboardCalendarCard } from '@/components/dashboard/dashboard-calendar
 import { WeeklyOverview } from '@/components/dashboard/weekly-overview';
 import { FitnessSummary } from '@/components/dashboard/fitness-summary';
 import { TrendSection } from '@/components/dashboard/trend-section';
+import { Last7DaysCard } from '@/components/dashboard/last-7-days-card';
 import { HeatmapCalendar } from '@/components/charts/heatmap-calendar';
 import { MonthlyStrainRings } from '@/components/charts/monthly-strain-rings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -83,7 +84,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold" style={{ color: 'var(--fg)' }}>Dashboard</h1>
         <Link href="/workouts/new">
@@ -99,7 +100,10 @@ export default function DashboardPage() {
         duration={stats.today.duration}
         calories={stats.today.calories}
         steps={stats.today.steps || 0}
+        sleepHours={stats.metrics?.sleepHours ?? null}
       />
+
+      <Last7DaysCard last7Days={stats.last7Days || []} />
 
       <WeeklyOverview progress={stats.weeklyProgress} weeklyStreak={stats.weeklyStreak} />
 
@@ -138,33 +142,39 @@ export default function DashboardPage() {
         <TrendSection strainData={strainData} />
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card className="text-center">
-          <CardContent className="pt-4">
-            <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{stats.totals.workouts}</div>
-            <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Total Workouts</div>
-          </CardContent>
-        </Card>
-        <Card className="text-center">
-          <CardContent className="pt-4">
-            <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>
-              {Math.floor((stats.totals.duration || 0) / 60)}<span className="text-lg font-normal" style={{ color: 'var(--fg-muted)' }}>h</span>
-            </div>
-            <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Total Time</div>
-          </CardContent>
-        </Card>
-        <Card className="text-center">
-          <CardContent className="pt-4">
-            <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{stats.averages.strain}</div>
-            <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Avg Daily Strain</div>
-          </CardContent>
-        </Card>
-        <Card className="text-center">
-          <CardContent className="pt-4">
-            <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{stats.streaks.longest}</div>
-            <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Best Streak</div>
-          </CardContent>
-        </Card>
+      <div>
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--fg)' }}>All Time</h2>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--fg-muted)' }}>Your lifetime totals</p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Card className="text-center">
+            <CardContent>
+              <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{stats.totals.workouts}</div>
+              <div className="text-xs mt-1.5" style={{ color: 'var(--fg-muted)' }}>Total Workouts</div>
+            </CardContent>
+          </Card>
+          <Card className="text-center">
+            <CardContent>
+              <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>
+                {Math.floor((stats.totals.duration || 0) / 60)}<span className="text-lg font-normal" style={{ color: 'var(--fg-muted)' }}>h</span>
+              </div>
+              <div className="text-xs mt-1.5" style={{ color: 'var(--fg-muted)' }}>Total Time</div>
+            </CardContent>
+          </Card>
+          <Card className="text-center">
+            <CardContent>
+              <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{stats.averages.strain}</div>
+              <div className="text-xs mt-1.5" style={{ color: 'var(--fg-muted)' }}>Avg Daily Strain</div>
+            </CardContent>
+          </Card>
+          <Card className="text-center">
+            <CardContent>
+              <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{stats.streaks.longest}</div>
+              <div className="text-xs mt-1.5" style={{ color: 'var(--fg-muted)' }}>Best Streak</div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { getStrainColor, getStrainLabel, getWorkoutColor } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
-import { ArrowLeft, Clock, Flame, Activity, Heart, Trash2 } from 'lucide-react';
+import { ArrowLeft, Clock, Flame, Activity, Heart, Trash2, Route, Timer, Gauge } from 'lucide-react';
 import { toast } from 'sonner';
 import type { WorkoutType } from '@/lib/constants';
 
@@ -124,6 +124,37 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
               </div>
             )}
           </div>
+
+          {workout.distance_km != null && workout.distance_km > 0 && (
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="text-center p-3 rounded-lg" style={{ background: 'var(--bg)' }}>
+                <div className="flex items-center justify-center gap-1 text-2xl font-bold tabular-nums" style={{ color: '#00bcd4' }}>
+                  <Route className="h-5 w-5" />
+                  {workout.distance_km.toFixed(2)}
+                </div>
+                <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Distance (km)</div>
+              </div>
+              <div className="text-center p-3 rounded-lg" style={{ background: 'var(--bg)' }}>
+                <div className="flex items-center justify-center gap-1 text-2xl font-bold tabular-nums" style={{ color: '#00bcd4' }}>
+                  <Timer className="h-5 w-5" />
+                  {(() => {
+                    const paceMinPerKm = workout.duration_minutes / workout.distance_km!;
+                    const mins = Math.floor(paceMinPerKm);
+                    const secs = Math.round((paceMinPerKm - mins) * 60);
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                  })()}
+                </div>
+                <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Pace (min/km)</div>
+              </div>
+              <div className="text-center p-3 rounded-lg" style={{ background: 'var(--bg)' }}>
+                <div className="flex items-center justify-center gap-1 text-2xl font-bold tabular-nums" style={{ color: '#00bcd4' }}>
+                  <Gauge className="h-5 w-5" />
+                  {(workout.distance_km! / (workout.duration_minutes / 60)).toFixed(1)}
+                </div>
+                <div className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Avg Speed (km/h)</div>
+              </div>
+            </div>
+          )}
 
           {workout.exercises && workout.exercises.length > 0 && (
             <div className="space-y-4">

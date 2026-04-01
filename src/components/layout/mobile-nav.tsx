@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Dumbbell, Target, Settings, UtensilsCrossed, Moon, FileText, User } from 'lucide-react';
+import { LayoutDashboard, Dumbbell, Target, Settings, UtensilsCrossed, Moon, FileText, User, Footprints } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Home', icon: LayoutDashboard },
   { href: '/workouts', label: 'Workouts', icon: Dumbbell },
+  { href: '/running', label: 'Running', icon: Footprints },
   { href: '/nutrition', label: 'Nutrition', icon: UtensilsCrossed },
   { href: '/sleep', label: 'Sleep', icon: Moon },
   { href: '/reports', label: 'Reports', icon: FileText },

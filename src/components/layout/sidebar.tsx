@@ -14,11 +14,13 @@ import {
   Moon,
   FileText,
   User,
+  Footprints,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/workouts', label: 'Workouts', icon: Dumbbell },
+  { href: '/running', label: 'Running', icon: Footprints },
   { href: '/nutrition', label: 'Nutrition', icon: Salad },
   { href: '/sleep', label: 'Sleep', icon: Moon },
   { href: '/reports', label: 'Reports', icon: FileText },

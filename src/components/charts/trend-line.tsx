@@ -14,10 +14,12 @@ interface TrendLineProps {
 export function TrendLine({ data, color = '#00d26a', label = 'Value', formatter }: TrendLineProps) {
   const { theme } = useTheme();
   const ct = {
-    tick: theme === 'light' ? '#71717a' : '#6b7280',
-    tooltipBg: theme === 'light' ? '#ffffff' : '#141419',
-    tooltipBorder: theme === 'light' ? '#cccbda' : '#2a2a35',
-    tooltipColor: theme === 'light' ? '#18181b' : '#e5e5e5',
+    tick: theme === 'light' ? '#8a8378' : '#706c66',
+    grid: theme === 'light' ? '#ddd6c9' : '#2a2a2e',
+    tooltipBg: theme === 'light' ? '#faf8f4' : '#1e1e22',
+    tooltipBorder: theme === 'light' ? '#ddd6c9' : '#2a2a2e',
+    tooltipColor: theme === 'light' ? '#1a1a1a' : '#e8e6e1',
+    cardBg: theme === 'light' ? '#faf8f4' : '#1e1e22',
   };
 
   const chartData = data.map((d) => ({
@@ -25,16 +27,16 @@ export function TrendLine({ data, color = '#00d26a', label = 'Value', formatter 
     label: format(parseISO(d.date), 'MMM d'),
   }));
 
+  const formatYAxis = (value: number) => {
+    if (formatter) return formatter(value);
+    if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+    return value % 1 === 0 ? String(value) : value.toFixed(1);
+  };
+
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <AreaChart data={chartData} margin={{ top: 10, right: 10, bottom: 5, left: 5 }}>
-        <defs>
-          <linearGradient id={`gradient-${color}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={color} stopOpacity={0.25} />
-            <stop offset="95%" stopColor={color} stopOpacity={0.02} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke={ct.tooltipBorder} vertical={false} />
+      <AreaChart data={chartData} margin={{ top: 10, right: 10, bottom: 5, left: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} vertical={false} />
         <XAxis
           dataKey="label"
           axisLine={false}
@@ -42,7 +44,14 @@ export function TrendLine({ data, color = '#00d26a', label = 'Value', formatter 
           tick={{ fill: ct.tick, fontSize: 11 }}
           interval="preserveStartEnd"
         />
-        <YAxis hide />
+        <YAxis
+          axisLine={false}
+          tickLine={false}
+          tick={{ fill: ct.tick, fontSize: 11 }}
+          tickFormatter={formatYAxis}
+          width={45}
+          domain={['auto', 'auto']}
+        />
         <Tooltip
           contentStyle={{
             backgroundColor: ct.tooltipBg,
@@ -60,9 +69,9 @@ export function TrendLine({ data, color = '#00d26a', label = 'Value', formatter 
           dataKey="value"
           stroke={color}
           strokeWidth={2.5}
-          fill={`url(#gradient-${color})`}
-          dot={{ r: 3, fill: color, stroke: ct.tooltipBg, strokeWidth: 2 }}
-          activeDot={{ r: 5, fill: color, stroke: ct.tooltipBg, strokeWidth: 2 }}
+          fill="none"
+          dot={{ r: 3, fill: color, stroke: ct.cardBg, strokeWidth: 2 }}
+          activeDot={{ r: 5, fill: color, stroke: ct.cardBg, strokeWidth: 2 }}
         />
       </AreaChart>
     </ResponsiveContainer>

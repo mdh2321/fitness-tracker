@@ -15,10 +15,11 @@ interface TrendBarProps {
 export function TrendBar({ data, color = '#00d26a', label = 'Value', period = 'daily', formatter }: TrendBarProps) {
   const { theme } = useTheme();
   const ct = {
-    tick: theme === 'light' ? '#71717a' : '#6b7280',
-    tooltipBg: theme === 'light' ? '#ffffff' : '#141419',
-    tooltipBorder: theme === 'light' ? '#cccbda' : '#2a2a35',
-    tooltipColor: theme === 'light' ? '#18181b' : '#e5e5e5',
+    tick: theme === 'light' ? '#8a8378' : '#706c66',
+    grid: theme === 'light' ? '#ddd6c9' : '#2a2a2e',
+    tooltipBg: theme === 'light' ? '#faf8f4' : '#1e1e22',
+    tooltipBorder: theme === 'light' ? '#ddd6c9' : '#2a2a2e',
+    tooltipColor: theme === 'light' ? '#1a1a1a' : '#e8e6e1',
   };
 
   const dateFormat = period === 'monthly' ? 'MMM' : 'MMM d';
@@ -30,15 +31,21 @@ export function TrendBar({ data, color = '#00d26a', label = 'Value', period = 'd
   return (
     <ResponsiveContainer width="100%" height={220}>
       <BarChart data={chartData} margin={{ top: 10, right: 10, bottom: 5, left: 5 }} barCategoryGap="20%">
-        <CartesianGrid strokeDasharray="3 3" stroke={ct.tooltipBorder} vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} vertical={false} />
         <XAxis
           dataKey="label"
           axisLine={false}
           tickLine={false}
           tick={{ fill: ct.tick, fontSize: 11 }}
-          interval={0}
+          interval={period === 'monthly' ? 0 : 'preserveStartEnd'}
         />
-        <YAxis hide />
+        <YAxis
+          axisLine={false}
+          tickLine={false}
+          tick={{ fill: ct.tick, fontSize: 11 }}
+          width={45}
+          tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)}
+        />
         <Tooltip
           cursor={{ fill: 'rgba(128,128,128,0.06)', radius: 4 }}
           contentStyle={{

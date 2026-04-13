@@ -1,4 +1,6 @@
-import type { WorkoutType, ExerciseCategory, MuscleGroup } from './constants';
+import type { WorkoutType, ExerciseCategory, MuscleGroup, FitnessGoal, Grade } from './constants';
+
+export type { FitnessGoal, Grade };
 
 export interface Workout {
   id: number;
@@ -81,6 +83,7 @@ export interface UserSettings {
   accent_color: string;
   unlocked_colors: string;
   pinned_badges: string;
+  fitness_goal: FitnessGoal;
 }
 
 export interface WorkoutWithExercises extends Workout {

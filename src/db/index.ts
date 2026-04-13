@@ -131,6 +131,31 @@ const initPromise = (async () => {
 
   // Pinned badges column on user_settings
   await client.execute(`ALTER TABLE user_settings ADD COLUMN pinned_badges TEXT NOT NULL DEFAULT '[]'`).catch(() => {});
+
+  // Fitness goal column on user_settings (drives nutrition scoring)
+  await client.execute(`ALTER TABLE user_settings ADD COLUMN fitness_goal TEXT NOT NULL DEFAULT 'maintain'`).catch(() => {});
+
+  // Nutrition v2: per-meal enrichment columns
+  const mealColumns = [
+    { name: 'emoji', type: 'TEXT' },
+    { name: 'grade', type: 'TEXT' },
+  ];
+  for (const col of mealColumns) {
+    await client.execute(`ALTER TABLE meal_entries ADD COLUMN ${col.name} ${col.type}`).catch(() => {});
+  }
+
+  // Nutrition v3: drop columns the AI no longer produces — portion is inferred
+  // from description, day overview is a single summary paragraph.
+  const droppedColumns: Array<{ table: string; column: string }> = [
+    { table: 'meal_entries', column: 'portion_size' },
+    { table: 'daily_nutrition', column: 'strengths' },
+    { table: 'daily_nutrition', column: 'gaps' },
+    { table: 'daily_nutrition', column: 'macros' },
+    { table: 'daily_nutrition', column: 'goal_alignment' },
+  ];
+  for (const { table, column } of droppedColumns) {
+    await client.execute(`ALTER TABLE ${table} DROP COLUMN ${column}`).catch(() => {});
+  }
 })();
 
 export const db = drizzle(client, { schema });

@@ -20,6 +20,7 @@ export const userSettings = sqliteTable('user_settings', {
   accent_color: text('accent_color').notNull().default('#00d26a'),
   unlocked_colors: text('unlocked_colors').notNull().default('["#00d26a"]'),
   pinned_badges: text('pinned_badges').notNull().default('[]'),
+  fitness_goal: text('fitness_goal').notNull().default('maintain'),
 });
 
 export const workouts = sqliteTable('workouts', {
@@ -79,6 +80,8 @@ export const mealEntries = sqliteTable('meal_entries', {
   description: text('description').notNull(),
   order_index: integer('order_index').notNull().default(0),
   logged_at: text('logged_at').notNull(),
+  emoji: text('emoji'),
+  grade: text('grade'),
 });
 
 export const dailyNutrition = sqliteTable('daily_nutrition', {

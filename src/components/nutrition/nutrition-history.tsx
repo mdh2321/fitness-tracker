@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { getStrainColor } from '@/lib/constants';
+import { getGradeFromScore, getGradeColor } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface NutritionHistoryProps {
@@ -20,51 +20,6 @@ const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
-
-function MiniRing({ score, size = 32 }: { score: number | null; size?: number }) {
-  const strokeWidth = 3;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const percentage = score !== null && score > 0 ? Math.min(score / 21, 1) : 0;
-  const strokeDashoffset = circumference * (1 - percentage);
-  const color = score !== null && score > 0 ? getStrainColor(score) : 'var(--bg-hover)';
-
-  return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="var(--bg-elevated)"
-          strokeWidth={strokeWidth}
-        />
-        {score !== null && score > 0 && (
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={color}
-            strokeWidth={strokeWidth}
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-          />
-        )}
-      </svg>
-      <div className="absolute flex items-center justify-center">
-        <span
-          className="text-[9px] font-bold tabular-nums leading-none"
-          style={{ color: score !== null && score > 0 ? color : 'var(--fg-muted)' }}
-        >
-          {score !== null && score > 0 ? Math.round(score) : ''}
-        </span>
-      </div>
-    </div>
-  );
-}
 
 export function NutritionHistory({
   viewMonth,
@@ -133,7 +88,7 @@ export function NutritionHistory({
         </div>
 
         {/* Day cells */}
-        <div className="grid grid-cols-7 gap-y-0.5">
+        <div className="grid grid-cols-7 gap-1.5">
           {cells.map((day, i) => {
             if (!day) return <div key={`empty-${i}`} />;
 
@@ -142,33 +97,52 @@ export function NutritionHistory({
             const isSelected = dateStr === selectedDate;
             const isToday = dateStr === today;
             const score = scores[dateStr] ?? null;
+            const grade = score != null && score > 0 ? getGradeFromScore(score) : null;
+            const gradeColor = grade ? getGradeColor(grade) : null;
+
+            const tileBackground = gradeColor
+              ? `linear-gradient(160deg, ${gradeColor}40 0%, ${gradeColor}14 100%)`
+              : 'var(--bg-elevated)';
+            const tileBorder = isSelected
+              ? (gradeColor ?? 'var(--fg)')
+              : gradeColor
+                ? `${gradeColor}33`
+                : 'transparent';
 
             return (
               <button
                 key={dateStr}
                 onClick={() => !isFuture && onSelectDate(dateStr)}
                 disabled={isFuture}
-                className="flex flex-col items-center gap-0.5 py-1 rounded-lg transition-colors"
+                className="aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200"
                 style={{
-                  background: isSelected ? 'var(--bg-elevated)' : 'transparent',
-                  outline: isSelected ? '1px solid var(--border)' : 'none',
-                  opacity: isFuture ? 0.25 : 1,
+                  background: tileBackground,
+                  borderWidth: '1.5px',
+                  borderStyle: 'solid',
+                  borderColor: tileBorder,
+                  boxShadow: isSelected && gradeColor ? `0 0 0 2px ${gradeColor}` : 'none',
+                  opacity: isFuture ? 0.2 : 1,
                   cursor: isFuture ? 'default' : 'pointer',
                 }}
               >
                 <span
-                  className="text-[10px] leading-none font-medium"
+                  className="text-[10px] leading-none font-medium mb-0.5"
                   style={{
                     color: isToday
                       ? '#00d26a'
-                      : isSelected
-                      ? 'var(--fg)'
-                      : 'var(--fg-muted)',
+                      : gradeColor
+                        ? 'var(--fg)'
+                        : 'var(--fg-muted)',
                   }}
                 >
                   {day}
                 </span>
-                <MiniRing score={score} size={32} />
+                <span
+                  className="text-sm font-bold leading-none"
+                  style={{ color: gradeColor ?? 'var(--fg-muted)', opacity: gradeColor ? 1 : 0.4 }}
+                >
+                  {grade ?? '·'}
+                </span>
               </button>
             );
           })}

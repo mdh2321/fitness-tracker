@@ -42,14 +42,14 @@ export function MealInput({ onAdd, disabled }: MealInputProps) {
       <input
         ref={inputRef}
         type="text"
-        placeholder="Describe a meal or snack…"
+        placeholder="Describe a meal — e.g. small block of chocolate"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         disabled={disabled || submitting}
-        className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--fg-muted)] disabled:cursor-not-allowed"
+        className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--fg-muted)] disabled:cursor-not-allowed min-w-0"
         style={{ color: 'var(--fg)' }}
       />
       <button

@@ -42,6 +42,7 @@ export async function PUT(request: NextRequest) {
       dashboard_layout,
       accent_color,
       pinned_badges,
+      fitness_goal,
     } = body;
 
     let settings = await db.select().from(userSettings).get();
@@ -72,6 +73,7 @@ export async function PUT(request: NextRequest) {
         dashboard_layout: dashboard_layout !== undefined ? dashboard_layout : settings.dashboard_layout,
         accent_color: accent_color ?? settings.accent_color,
         pinned_badges: pinned_badges !== undefined ? (typeof pinned_badges === 'string' ? pinned_badges : JSON.stringify(pinned_badges)) : settings.pinned_badges,
+        fitness_goal: fitness_goal ?? settings.fitness_goal,
       })
       .where(eq(userSettings.id, settings.id));
 

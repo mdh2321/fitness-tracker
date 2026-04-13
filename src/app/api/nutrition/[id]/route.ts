@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
+import { db, dbReady } from '@/db';
 import { mealEntries, dailyNutrition } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { scoreNutritionDay } from '@/lib/nutrition-ai';
+import { rescoreDay } from '@/lib/nutrition-scoring';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  await dbReady;
+
   const apiKey = request.headers.get('x-api-key');
   if (!apiKey || apiKey !== process.env.SYNC_API_KEY) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,39 +25,15 @@ export async function DELETE(
   const date = meal.date;
   await db.delete(mealEntries).where(eq(mealEntries.id, mealId));
 
-  const remaining = await db.select().from(mealEntries).where(eq(mealEntries.date, date));
-  const now = new Date().toISOString();
+  await rescoreDay(date);
 
-  if (remaining.length === 0) {
-    await db.delete(dailyNutrition).where(eq(dailyNutrition.date, date));
-    return NextResponse.json({ meals: [], score: null, summary: null });
-  }
+  const meals = await db.select().from(mealEntries).where(eq(mealEntries.date, date));
+  const nutrition = await db.select().from(dailyNutrition).where(eq(dailyNutrition.date, date)).get();
 
-  const descriptions = remaining.map((m) => m.description);
-  let score: number | null = null;
-  let summary: string | null = null;
-
-  // Only score if 3+ meals remain; clear score if dropped below threshold
-  if (descriptions.length >= 3) {
-    try {
-      const result = await scoreNutritionDay(descriptions, date);
-      score = result.score;
-      summary = result.summary;
-
-      await db
-        .insert(dailyNutrition)
-        .values({ date, nutrition_score: score, ai_summary: summary, scored_at: now, updated_at: now })
-        .onConflictDoUpdate({
-          target: dailyNutrition.date,
-          set: { nutrition_score: score, ai_summary: summary, scored_at: now, updated_at: now },
-        });
-    } catch (e) {
-      console.error('AI scoring failed:', e);
-    }
-  } else {
-    // Fewer than 3 meals — clear any existing score
-    await db.delete(dailyNutrition).where(eq(dailyNutrition.date, date));
-  }
-
-  return NextResponse.json({ meals: remaining, score, summary });
+  return NextResponse.json({
+    meals,
+    score: nutrition?.nutrition_score ?? null,
+    summary: nutrition?.ai_summary ?? null,
+    scored_at: nutrition?.scored_at ?? null,
+  });
 }

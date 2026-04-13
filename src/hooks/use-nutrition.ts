@@ -1,4 +1,5 @@
 import useSWR from 'swr';
+import type { Grade } from '@/lib/types';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -10,6 +11,8 @@ export interface MealEntry {
   description: string;
   order_index: number;
   logged_at: string;
+  emoji: string | null;
+  grade: Grade | null;
 }
 
 export interface NutritionDay {
@@ -22,7 +25,7 @@ export interface NutritionDay {
 export function useNutrition(date: string) {
   const { data, mutate, isLoading } = useSWR<NutritionDay>(
     `/api/nutrition?date=${date}`,
-    fetcher
+    fetcher,
   );
 
   const addMeal = async (description: string) => {

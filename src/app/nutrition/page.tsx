@@ -36,7 +36,14 @@ export default function NutritionPage() {
   const [viewMonth, setViewMonth] = useState(() => toViewMonth(today));
   const [isScoring, setIsScoring] = useState(false);
 
-  const { meals, score, summary, isLoading, addMeal, deleteMeal } = useNutrition(selectedDate);
+  const {
+    meals,
+    score,
+    summary,
+    isLoading,
+    addMeal,
+    deleteMeal,
+  } = useNutrition(selectedDate);
 
   const monthDates = useMemo(() => datesForMonth(viewMonth), [viewMonth]);
 
@@ -114,7 +121,7 @@ export default function NutritionPage() {
   const isToday = selectedDate === today;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Header + selected day nav */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold" style={{ color: 'var(--fg)' }}>Nutrition</h1>
@@ -143,7 +150,7 @@ export default function NutritionPage() {
       </div>
 
       {/* Score card + meal log */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-[minmax(300px,360px)_1fr] gap-6">
         <NutritionScoreCard
           score={score}
           summary={summary}
@@ -174,15 +181,17 @@ export default function NutritionPage() {
       </div>
 
       {/* Month calendar */}
-      <NutritionHistory
-        viewMonth={viewMonth}
-        scores={scores}
-        selectedDate={selectedDate}
-        onSelectDate={handleSelectDate}
-        onPrevMonth={handlePrevMonth}
-        onNextMonth={handleNextMonth}
-        canGoNext={canGoNextMonth}
-      />
+      <div className="max-w-xl mx-auto w-full">
+        <NutritionHistory
+          viewMonth={viewMonth}
+          scores={scores}
+          selectedDate={selectedDate}
+          onSelectDate={handleSelectDate}
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+          canGoNext={canGoNextMonth}
+        />
+      </div>
     </div>
   );
 }

@@ -266,6 +266,103 @@ export const SLEEP_STAGE_COLORS = {
   awake: '#ff3b5c',
 } as const;
 
+// ─── Nutrition v2: A–F grading ───────────────────────────────────────────────
+
+export type Grade = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+
+export const GRADE_COLORS: Record<Grade, string> = {
+  A: '#00d26a', // green — Arc primary
+  B: '#00bcd4', // teal
+  C: '#f5c518', // yellow
+  D: '#f59e0b', // amber
+  E: '#ff6b35', // orange
+  F: '#ff3b5c', // red
+};
+
+export const GRADE_LABELS: Record<Grade, string> = {
+  A: 'Excellent',
+  B: 'Solid',
+  C: 'Average',
+  D: 'Poor',
+  E: 'Weak',
+  F: 'Off track',
+};
+
+// Score thresholds on the 0-21 scale. Average lands in C, not at the bottom.
+// Full 6-band spectrum is reachable — a genuinely good whole-food day earns an A,
+// a junk-dominated day an F.
+export function getGradeFromScore(score: number | null | undefined): Grade | null {
+  if (score == null) return null;
+  if (score >= 17) return 'A';
+  if (score >= 13) return 'B';
+  if (score >= 10) return 'C';
+  if (score >= 7)  return 'D';
+  if (score >= 4)  return 'E';
+  return 'F';
+}
+
+export function getGradeColor(grade: Grade | null | undefined): string {
+  if (!grade) return 'var(--bg-hover)';
+  return GRADE_COLORS[grade];
+}
+
+export function getGradeLabel(grade: Grade | null | undefined): string {
+  if (!grade) return 'No grade';
+  return GRADE_LABELS[grade];
+}
+
+// Grade-aware micro-copy for the score card — plays back to the user based on the day
+export function getGradeMicroCopy(grade: Grade | null | undefined, mealCount: number): string {
+  if (!grade) {
+    if (mealCount === 0) return 'Log your first meal to get started.';
+    return 'Analysing your day…';
+  }
+  switch (grade) {
+    case 'A': return "You're cooking today.";
+    case 'B': return 'Solid day — keep it rolling.';
+    case 'C': return "Dinner's your chance to lift this.";
+    case 'D': return 'Reset at the next meal.';
+    case 'E': return 'Rough day — tomorrow is yours.';
+    case 'F': return 'Tomorrow is a fresh ring.';
+  }
+}
+
+// ─── Fitness goals ───────────────────────────────────────────────────────────
+
+export type FitnessGoal = 'lose_fat' | 'gain_muscle' | 'maintain' | 'endurance' | 'recomp';
+
+export const FITNESS_GOALS: FitnessGoal[] = ['lose_fat', 'gain_muscle', 'maintain', 'endurance', 'recomp'];
+
+export const FITNESS_GOAL_LABELS: Record<FitnessGoal, string> = {
+  lose_fat:    'Lose fat',
+  gain_muscle: 'Gain muscle',
+  maintain:    'Maintain',
+  endurance:   'Endurance',
+  recomp:      'Recomp',
+};
+
+export const FITNESS_GOAL_DESCRIPTIONS: Record<FitnessGoal, string> = {
+  lose_fat:    'Calorie-aware, protein-first, veg-heavy',
+  gain_muscle: 'Protein-heavy, calorie surplus friendly',
+  maintain:    'Balanced — whole foods, variety',
+  endurance:   'Carb-fuelled, timing matters',
+  recomp:      'High protein, calories roughly balanced',
+};
+
+// Prompt-ready guidance strings per goal — used by the nutrition AI prompt
+export const FITNESS_GOAL_PROMPT_GUIDANCE: Record<FitnessGoal, string> = {
+  lose_fat:
+    "Goal: fat loss. Reward high protein (esp. lean), fibre, volume-rich low-density foods (vegetables, fruit, legumes). Penalise calorie-dense / high-sugar / high-fat foods more than you would for maintenance. A modest calorie deficit is good; a large surplus is bad. Don't invent calorie counts — use your general food knowledge.",
+  gain_muscle:
+    "Goal: muscle gain. Reward high protein *heavily* (aim ~1.6-2.2g/kg bodyweight/day). A calorie surplus is GOOD, not a penalty — don't ding for size or density. Reward post-workout carbs on training days. Only penalise ultra-processed / nutrient-void choices.",
+  maintain:
+    "Goal: maintenance. Reward balance, whole foods, variety, adequate protein, plenty of vegetables. Neither surplus nor deficit is a penalty — quality is what counts.",
+  endurance:
+    "Goal: endurance performance. Reward carbohydrates (rice, potatoes, pasta, oats, fruit), adequate protein, good peri-workout fuelling. Low-carb days are a penalty if training was hard. Hydration-adjacent foods (fruit, electrolyte-rich veg) are a plus — but don't comment on drinks.",
+  recomp:
+    "Goal: body recomposition. Reward high protein (~1.8-2.2g/kg), a small calorie balance (slight deficit or surplus both OK), vegetables, whole foods. Large surpluses or large deficits are both penalties.",
+};
+
 // Apple Health activity type mapping
 export const APPLE_HEALTH_TYPE_MAP: Record<string, { type: WorkoutType; name: string }> = {
   HKWorkoutActivityTypeRunning: { type: 'cardio', name: 'Running' },

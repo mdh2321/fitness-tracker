@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
+import { db, dbReady } from '@/db';
 import { dailyNutrition } from '@/db/schema';
 import { inArray } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
+  await dbReady;
   const { searchParams } = new URL(request.url);
   const datesParam = searchParams.get('dates');
   if (!datesParam) return NextResponse.json({ scores: {} });

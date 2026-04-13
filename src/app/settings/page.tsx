@@ -11,15 +11,22 @@ import { Button } from '@/components/ui/button';
 import { Save, Sun, Moon, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExportCard } from '@/components/settings/export-card';
-import { ACCENT_COLORS } from '@/lib/constants';
+import {
+  ACCENT_COLORS,
+  FITNESS_GOALS,
+  FITNESS_GOAL_LABELS,
+  FITNESS_GOAL_DESCRIPTIONS,
+  type FitnessGoal,
+} from '@/lib/constants';
 import { useWeeklyQuests } from '@/hooks/use-quests';
 
 export default function SettingsPage() {
   const { settings, isLoading, updateSettings } = useSettings();
-  const { register, handleSubmit, reset } = useForm();
+  const { register, handleSubmit, reset, watch, setValue } = useForm();
   const { theme, setTheme, accentColor, setAccentColor } = useTheme();
   const { data: questData } = useWeeklyQuests();
   const userLevel = questData?.xp?.level ?? 1;
+  const fitnessGoal = (watch('fitness_goal') as FitnessGoal | undefined) ?? 'maintain';
   useEffect(() => {
     if (settings) {
       // Convert sleep target from minutes (DB) to hours (UI)
@@ -48,6 +55,7 @@ export default function SettingsPage() {
         daily_nutrition_score_target: parseInt(data.daily_nutrition_score_target),
         daily_steps_target: parseInt(data.daily_steps_target),
         daily_strain_target: parseFloat(data.daily_strain_target),
+        fitness_goal: data.fitness_goal as FitnessGoal,
       });
       toast.success('Settings saved');
     } catch {
@@ -139,6 +147,42 @@ export default function SettingsPage() {
       </Card>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Fitness Goal</CardTitle>
+            <CardDescription>Shapes how Arc grades your nutrition</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <input type="hidden" {...register('fitness_goal')} />
+            <div className="flex flex-wrap gap-2">
+              {FITNESS_GOALS.map((g) => {
+                const active = fitnessGoal === g;
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setValue('fitness_goal', g, { shouldDirty: true })}
+                    className="flex flex-col items-start gap-0.5 px-3 py-2 rounded-lg border text-left transition-colors"
+                    style={{
+                      background: active ? 'var(--bg-elevated)' : 'var(--bg)',
+                      borderColor: active ? '#00d26a' : 'var(--border)',
+                      color: active ? 'var(--fg)' : 'var(--fg-secondary)',
+                      boxShadow: active ? '0 0 0 2px rgba(0, 210, 106, 0.18)' : 'none',
+                    }}
+                  >
+                    <span className="text-sm font-semibold leading-none">
+                      {FITNESS_GOAL_LABELS[g]}
+                    </span>
+                    <span className="text-[11px] leading-snug" style={{ color: 'var(--fg-muted)' }}>
+                      {FITNESS_GOAL_DESCRIPTIONS[g]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Profile</CardTitle>

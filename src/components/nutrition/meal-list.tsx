@@ -1,22 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Trash2, Salad } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { getGradeColor } from '@/lib/constants';
 import type { MealEntry } from '@/hooks/use-nutrition';
 
 interface MealListProps {
   meals: MealEntry[];
   onDelete: (id: number) => Promise<void>;
   disabled?: boolean;
-}
-
-function formatTime(isoString: string) {
-  try {
-    return new Date(isoString).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  } catch {
-    return '';
-  }
 }
 
 function MealRow({
@@ -31,31 +24,69 @@ function MealRow({
   disabled?: boolean;
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [emojiPop, setEmojiPop] = useState(false);
+
+  // Bounce the emoji in the first time it appears for this row
+  useEffect(() => {
+    if (!meal.emoji) return;
+    setEmojiPop(false);
+    const t = setTimeout(() => setEmojiPop(true), 40);
+    return () => clearTimeout(t);
+  }, [meal.emoji]);
+
+  const gradeColor = getGradeColor(meal.grade);
 
   return (
     <>
       <li
-        className="group flex items-start gap-3 px-3 py-2.5 rounded-xl transition-colors"
+        className="group flex items-center gap-3 px-3 py-2 rounded-xl transition-colors"
         style={{ background: 'var(--bg-elevated)' }}
       >
-        {/* Index badge */}
         <span
-          className="shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold tabular-nums"
-          style={{ background: 'rgba(0,210,106,0.12)', color: '#00d26a' }}
+          className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
+          style={{
+            background: meal.emoji ? 'transparent' : 'rgba(0,210,106,0.12)',
+          }}
         >
-          {index + 1}
+          {meal.emoji ? (
+            <span
+              className="text-xl leading-none select-none"
+              style={{
+                display: 'inline-block',
+                transform: emojiPop ? 'scale(1)' : 'scale(0.3)',
+                opacity: emojiPop ? 1 : 0,
+                transition: 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease-out',
+              }}
+            >
+              {meal.emoji}
+            </span>
+          ) : (
+            <span className="text-[10px] font-bold tabular-nums" style={{ color: '#00d26a' }}>
+              {index + 1}
+            </span>
+          )}
         </span>
 
-        {/* Description */}
-        <span className="flex-1 text-sm leading-snug" style={{ color: 'var(--fg)' }}>
+        <span
+          className="flex-1 min-w-0 text-sm truncate"
+          style={{ color: 'var(--fg)' }}
+          title={meal.description}
+        >
           {meal.description}
         </span>
 
-        {/* Time + delete */}
-        <div className="shrink-0 flex items-center gap-2 mt-0.5">
-          <span className="text-[11px] tabular-nums" style={{ color: 'var(--fg-muted)' }}>
-            {formatTime(meal.logged_at)}
-          </span>
+        <div className="shrink-0 flex items-center gap-2">
+          {meal.grade && (
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none"
+              style={{
+                background: `${gradeColor}22`,
+                color: gradeColor,
+              }}
+            >
+              {meal.grade}
+            </span>
+          )}
           <button
             onClick={() => setConfirmOpen(true)}
             disabled={disabled}
@@ -94,7 +125,7 @@ export function MealList({ meals, onDelete, disabled }: MealListProps) {
             Nothing logged yet
           </p>
           <p className="text-xs mt-0.5" style={{ color: 'var(--fg-muted)' }}>
-            Add a meal above to get your score
+            Add a meal above to get your grade
           </p>
         </div>
       </div>

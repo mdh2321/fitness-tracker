@@ -158,6 +158,21 @@ export function RunTrends({ runs }: RunTrendsProps) {
     if (data.length === 0) {
       return <p className="text-xs py-16 text-center" style={{ color: 'var(--fg-muted)' }}>No data</p>;
     }
+    if (data.length < 3) {
+      return (
+        <div className="py-14 text-center">
+          <p className="text-xs" style={{ color: 'var(--fg-muted)' }}>
+            Only {data.length === 1 ? '1 run' : `${data.length} runs`} in this window — not enough to chart a trend.
+          </p>
+          {granularity === 'daily' && (
+            <p className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>
+              Try <b className="font-semibold" style={{ color: 'var(--fg-secondary)' }}>Weekly</b> or{' '}
+              <b className="font-semibold" style={{ color: 'var(--fg-secondary)' }}>Monthly</b> for a longer view.
+            </p>
+          )}
+        </div>
+      );
+    }
     // Volume metrics (distance, duration) use bars when aggregated, lines for daily per-run
     // Rate metrics (HR, pace) always use lines to show trajectory
     if (isVolume && useBar) {

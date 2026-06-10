@@ -3,31 +3,11 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { format, parseISO, isToday, isYesterday } from 'date-fns';
-import { getStrainColor } from '@/lib/constants';
+import { getStrainColor, getWorkoutEmoji } from '@/lib/constants';
 import type { Workout } from '@/lib/types';
 
 interface RecentWorkoutsProps {
   workouts: Workout[];
-}
-
-const WORKOUT_EMOJI: Record<string, string> = {
-  'Walking': '🚶',
-  'Running': '🏃',
-  'Rowing': '🚣',
-  'Cycling': '🚴',
-  'Swimming': '🏊',
-  'Strength Training': '🏋️',
-  'Functional Strength': '🏋️',
-  'HIIT': '⚡',
-  'Yoga': '🧘',
-  'Pilates': '🤸',
-  'Hiking': '🥾',
-  'Boxing': '🥊',
-  'Basketball': '🏀',
-};
-
-function workoutEmoji(name: string): string {
-  return WORKOUT_EMOJI[name] ?? '💪';
 }
 
 function formatDay(w: Workout): string {
@@ -74,7 +54,7 @@ export function RecentWorkouts({ workouts }: RecentWorkoutsProps) {
                   className="flex items-center justify-center w-8 h-8 rounded-[9px] text-sm"
                   style={{ background: `color-mix(in srgb, ${color} 12%, transparent)` }}
                 >
-                  {workoutEmoji(w.name)}
+                  {getWorkoutEmoji(w.name)}
                 </span>
                 <div className="min-w-0">
                   <div className="text-[13px] font-semibold truncate" style={{ color: 'var(--fg)' }}>{w.name}</div>

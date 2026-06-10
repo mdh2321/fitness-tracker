@@ -114,7 +114,7 @@ export function NutritionHistory({
                 key={dateStr}
                 onClick={() => !isFuture && onSelectDate(dateStr)}
                 disabled={isFuture}
-                className="aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200"
+                className="h-[58px] flex flex-col items-center justify-center rounded-xl transition-all duration-200"
                 style={{
                   background: tileBackground,
                   borderWidth: '1.5px',

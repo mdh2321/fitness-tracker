@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { getStrainColor, getWorkoutColor } from '@/lib/constants';
+import { getStrainColor, getWorkoutColor, getWorkoutEmoji } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
 import { Clock, Flame, Heart, ChevronRight, Footprints, Route } from 'lucide-react';
 import type { Workout } from '@/lib/types';
@@ -20,11 +20,13 @@ export function WorkoutCard({ workout }: { workout: Workout }) {
           borderColor: 'var(--border)',
         }}
       >
-        {/* Color dot */}
-        <div
-          className="w-2 h-2 rounded-full flex-shrink-0"
-          style={{ backgroundColor: color }}
-        />
+        {/* Activity emoji chip */}
+        <span
+          className="flex items-center justify-center w-8 h-8 rounded-[9px] text-sm flex-shrink-0"
+          style={{ background: `color-mix(in srgb, ${color} 12%, transparent)` }}
+        >
+          {getWorkoutEmoji(workout.name)}
+        </span>
 
         {/* Name + date */}
         <div className="flex-1 min-w-0">

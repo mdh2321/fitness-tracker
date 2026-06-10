@@ -50,7 +50,7 @@ export function TrendLine({ data, color = '#00d26a', label = 'Value', formatter 
           tick={{ fill: ct.tick, fontSize: 11 }}
           tickFormatter={formatYAxis}
           width={45}
-          domain={['auto', 'auto']}
+          domain={[(dataMin: number) => Math.max(0, dataMin * 0.9), 'auto']}
         />
         <Tooltip
           contentStyle={{

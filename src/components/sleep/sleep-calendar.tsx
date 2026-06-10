@@ -108,32 +108,37 @@ export function SleepCalendar({ data, onSelectDate }: SleepCalendarProps) {
       <div className="grid grid-cols-7 gap-1">
         {days.map((day) => {
           const hasData = day.minutes > 0;
+          const color = hasData ? getSleepColor(day.minutes) : null;
+          const isSelected = selectedDate === day.date;
           return (
             <button
               key={day.date}
               onClick={() => handleSelect(day.date)}
               className="relative flex flex-col items-center justify-center rounded-lg transition-all min-h-[52px]"
               style={{
-                background: selectedDate === day.date
-                  ? 'var(--bg-elevated)'
-                  : hasData
-                    ? getSleepColor(day.minutes)
+                background: color
+                  ? `color-mix(in srgb, ${color} 14%, transparent)`
+                  : isSelected
+                    ? 'var(--bg-elevated)'
                     : 'var(--bg-card)',
                 opacity: day.isCurrentMonth ? 1 : 0.3,
-                border: selectedDate === day.date ? '1px solid var(--border)' : '1px solid transparent',
+                border: isSelected
+                  ? '1px solid var(--fg-muted)'
+                  : color
+                    ? `1px solid color-mix(in srgb, ${color} 45%, transparent)`
+                    : day.isToday
+                      ? '1px solid var(--accent)'
+                      : '1px solid transparent',
               }}
             >
               <span
                 className="text-xs font-medium tabular-nums"
-                style={{ color: hasData ? '#fff' : day.isToday ? '#00d26a' : 'var(--fg)' }}
+                style={{ color: day.isToday ? 'var(--accent)' : 'var(--fg)' }}
               >
                 {parseInt(day.date.split('-')[2], 10)}
               </span>
-              {hasData && (
-                <span
-                  className="text-[9px] font-bold tabular-nums mt-0.5"
-                  style={{ color: 'rgba(255,255,255,0.85)' }}
-                >
+              {hasData && color && (
+                <span className="text-[9px] font-bold tabular-nums mt-0.5" style={{ color }}>
                   {formatDuration(day.minutes)}
                 </span>
               )}
@@ -147,7 +152,13 @@ export function SleepCalendar({ data, onSelectDate }: SleepCalendarProps) {
         <span>Less</span>
         {SLEEP_COLORS.map((s) => (
           <div key={s.label} className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: s.color }} />
+            <div
+              className="w-3 h-3 rounded-sm"
+              style={{
+                background: `color-mix(in srgb, ${s.color} 14%, transparent)`,
+                border: `1px solid color-mix(in srgb, ${s.color} 55%, transparent)`,
+              }}
+            />
             <span>{s.label}</span>
           </div>
         ))}

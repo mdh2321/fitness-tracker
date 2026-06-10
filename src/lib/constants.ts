@@ -70,6 +70,26 @@ export function getWorkoutColor(name: string, type?: WorkoutType): string {
   return WORKOUT_NAME_COLORS[name] ?? (type ? WORKOUT_TYPE_COLORS[type] : '#6b7280');
 }
 
+export const WORKOUT_EMOJI: Record<string, string> = {
+  'Walking': '🚶',
+  'Running': '🏃',
+  'Rowing': '🚣',
+  'Cycling': '🚴',
+  'Swimming': '🏊',
+  'Strength Training': '🏋️',
+  'Functional Strength': '🏋️',
+  'HIIT': '⚡',
+  'Yoga': '🧘',
+  'Pilates': '🤸',
+  'Hiking': '🥾',
+  'Boxing': '🥊',
+  'Basketball': '🏀',
+};
+
+export function getWorkoutEmoji(name: string): string {
+  return WORKOUT_EMOJI[name] ?? '💪';
+}
+
 export const STRAIN_COLORS = {
   low: '#ff3b5c',      // 0-5  red (low activity)
   moderate: '#ff6b35',  // 5-10 orange

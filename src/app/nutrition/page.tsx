@@ -181,7 +181,7 @@ export default function NutritionPage() {
       </div>
 
       {/* Month calendar */}
-      <div className="max-w-xl mx-auto w-full">
+      <div className="w-full">
         <NutritionHistory
           viewMonth={viewMonth}
           scores={scores}

@@ -1,4 +1,4 @@
-export const PASSIVE_ACTIVITIES = new Set(['Walking']);
+export const PASSIVE_ACTIVITIES = new Set(['Walking', 'Basketball']);
 
 export const WORKOUT_TYPES = ['strength', 'cardio', 'mixed', 'flexibility', 'sport'] as const;
 export type WorkoutType = (typeof WORKOUT_TYPES)[number];

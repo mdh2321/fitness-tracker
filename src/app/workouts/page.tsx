@@ -32,7 +32,7 @@ import {
   subMonths,
   isFuture,
 } from 'date-fns';
-import { getWorkoutColor, getStrainColor } from '@/lib/constants';
+import { getWorkoutColor, getStrainColor, PASSIVE_ACTIVITIES } from '@/lib/constants';
 import { MonthGrid } from '@/components/calendar/month-grid';
 import { DayDetail } from '@/components/calendar/day-detail';
 import type { Workout, DailyStrain, DailySleep } from '@/lib/types';
@@ -113,7 +113,7 @@ export default function WorkoutsPage() {
 
   const calFilteredWorkouts = useMemo(() => {
     if (!calWorkouts) return [];
-    return calWorkouts.filter((w) => w.name !== 'Walking');
+    return calWorkouts.filter((w) => !PASSIVE_ACTIVITIES.has(w.name));
   }, [calWorkouts]);
 
   const selectedWorkouts = useMemo(() => {

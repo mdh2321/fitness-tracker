@@ -20,6 +20,7 @@ import { Card } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import useSWR from 'swr';
 import type { Workout, DailyStrain, DailySleep } from '@/lib/types';
+import { PASSIVE_ACTIVITIES } from '@/lib/constants';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -104,10 +105,9 @@ export default function CalendarPage() {
 
   const nutritionScores = nutritionData?.scores ?? {};
 
-  // Filter out walking
   const filteredWorkouts = useMemo(() => {
     if (!workoutsData) return [];
-    return workoutsData.filter((w) => w.name !== 'Walking');
+    return workoutsData.filter((w) => !PASSIVE_ACTIVITIES.has(w.name));
   }, [workoutsData]);
 
   // Filter workouts for the selected day

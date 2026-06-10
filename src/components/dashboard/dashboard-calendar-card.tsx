@@ -17,6 +17,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { MonthGrid } from '@/components/calendar/month-grid';
 import { DayDetail } from '@/components/calendar/day-detail';
 import type { Workout, DailyStrain, DailySleep } from '@/lib/types';
+import { PASSIVE_ACTIVITIES } from '@/lib/constants';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -83,7 +84,7 @@ export function DashboardCalendarCard() {
 
   const filteredWorkouts = useMemo(() => {
     if (!workoutsData) return [];
-    return workoutsData.filter((w) => w.name !== 'Walking');
+    return workoutsData.filter((w) => !PASSIVE_ACTIVITIES.has(w.name));
   }, [workoutsData]);
 
   // Selected day data

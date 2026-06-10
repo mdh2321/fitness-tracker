@@ -1,56 +1,33 @@
 'use client';
 
-import { useMemo } from 'react';
 import Link from 'next/link';
-import { useStats, useStrainData } from '@/hooks/use-stats';
+import { useStats } from '@/hooks/use-stats';
 import { useWorkouts } from '@/hooks/use-workouts';
-import { TodayCard } from '@/components/dashboard/today-card';
-import { StreaksCard } from '@/components/dashboard/streaks-card';
-import { DashboardCalendarCard } from '@/components/dashboard/dashboard-calendar-card';
-import { WeeklyOverview } from '@/components/dashboard/weekly-overview';
-import { FitnessSummary } from '@/components/dashboard/fitness-summary';
+import { StrainHero } from '@/components/dashboard/strain-hero';
+import { TodayTiles } from '@/components/dashboard/today-tiles';
 import { TrendSection } from '@/components/dashboard/trend-section';
-import { Last7DaysCard } from '@/components/dashboard/last-7-days-card';
-import { HeatmapCalendar } from '@/components/charts/heatmap-calendar';
-import { MonthlyStrainRings } from '@/components/charts/monthly-strain-rings';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WeeklyGoals } from '@/components/dashboard/weekly-goals';
+import { StreaksCard } from '@/components/dashboard/streaks-card';
+import { TrainingMix } from '@/components/dashboard/training-mix';
+import { RecentWorkouts } from '@/components/dashboard/recent-workouts';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-
 import { ArcLogo } from '@/components/ui/arc-logo';
-import { PASSIVE_ACTIVITIES } from '@/lib/constants';
 
 export default function DashboardPage() {
   const { data: stats, isLoading } = useStats();
-  const { data: strainData } = useStrainData(365);
   const { data: allWorkouts } = useWorkouts(500);
-
-  // Split workouts into active and passive
-  const activeWorkouts = useMemo(() => {
-    if (!allWorkouts) return [];
-    return allWorkouts.filter((w) => !PASSIVE_ACTIVITIES.has(w.name));
-  }, [allWorkouts]);
-
-  // Use server-computed active workout dates (Walking excluded) for streaks calendar
-  const workoutDates = stats?.activeWorkoutDates || [];
-
-  // Build strain-by-date map for monthly rings
-  const strainByDate = useMemo(() => {
-    const map = new Map<string, { strain: number; duration: number; workouts: number }>();
-    if (strainData) {
-      for (const d of strainData) {
-        map.set(d.date, { strain: d.strain_score, duration: d.total_duration, workouts: d.workout_count });
-      }
-    }
-    return map;
-  }, [strainData]);
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-48 rounded-xl border animate-pulse" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }} />
-        ))}
+      <div className="max-w-7xl mx-auto space-y-3.5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-64 rounded-[20px] border animate-pulse" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }} />
+          ))}
+        </div>
+        <div className="h-80 rounded-[20px] border animate-pulse" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }} />
       </div>
     );
   }
@@ -83,10 +60,18 @@ export default function DashboardPage() {
     );
   }
 
+  const allTime = [
+    { value: String(stats.totals.workouts), label: 'workouts' },
+    { value: `${Math.floor((stats.totals.duration || 0) / 60)}h`, label: 'total time' },
+    { value: String(stats.averages.strain), label: 'avg daily strain' },
+    { value: `${Math.round((stats.totals.calories || 0) / 1000)}k`, label: 'calories' },
+    { value: String(stats.streaks.longest), label: 'best streak' },
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-3.5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--fg)' }}>Dashboard</h1>
+        <h1 className="font-display text-2xl font-bold" style={{ color: 'var(--fg)' }}>Dashboard</h1>
         <Link href="/workouts/new">
           <Button>
             <Plus className="mr-1 h-4 w-4" /> Log Workout
@@ -94,88 +79,70 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      <TodayCard
-        strain={stats.today.strain}
-        workouts={stats.today.workouts}
-        duration={stats.today.duration}
-        calories={stats.today.calories}
-        steps={stats.today.steps || 0}
-        sleepHours={stats.metrics?.sleepHours ?? null}
-      />
-
-      <Last7DaysCard last7Days={stats.last7Days || []} />
-
-      <WeeklyOverview progress={stats.weeklyProgress} weeklyStreak={stats.weeklyStreak} />
-
-      <StreaksCard
-        workoutStreak={stats.streaks}
-        exerciseStreak={stats.exerciseStreak}
-        sleepStreak={stats.sleepStreak}
-        nutritionStreak={stats.nutritionStreak}
-        workoutDates={workoutDates}
-        exerciseQualifyingDates={stats.exerciseQualifyingDates || []}
-        sleepQualifyingDates={stats.sleepQualifyingDates || []}
-        nutritionQualifyingDates={stats.nutritionQualifyingDates || []}
-        dailyTargets={stats.dailyTargets}
-      />
-
-      <DashboardCalendarCard />
-
-      {allWorkouts && allWorkouts.length > 0 && (
-        <FitnessSummary workouts={activeWorkouts} />
-      )}
-
-      <MonthlyStrainRings strainByDate={strainByDate} />
-
-      {strainData && strainData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Activity Heatmap</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <HeatmapCalendar data={strainData} />
-          </CardContent>
-        </Card>
-      )}
-
-      {strainData && strainData.length > 0 && (
-        <TrendSection strainData={strainData} />
-      )}
-
-      <div>
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--fg)' }}>All Time</h2>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--fg-muted)' }}>Your lifetime totals</p>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Card className="text-center">
-            <CardContent>
-              <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{stats.totals.workouts}</div>
-              <div className="text-xs mt-1.5" style={{ color: 'var(--fg-muted)' }}>Total Workouts</div>
-            </CardContent>
-          </Card>
-          <Card className="text-center">
-            <CardContent>
-              <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>
-                {Math.floor((stats.totals.duration || 0) / 60)}<span className="text-lg font-normal" style={{ color: 'var(--fg-muted)' }}>h</span>
-              </div>
-              <div className="text-xs mt-1.5" style={{ color: 'var(--fg-muted)' }}>Total Time</div>
-            </CardContent>
-          </Card>
-          <Card className="text-center">
-            <CardContent>
-              <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{stats.averages.strain}</div>
-              <div className="text-xs mt-1.5" style={{ color: 'var(--fg-muted)' }}>Avg Daily Strain</div>
-            </CardContent>
-          </Card>
-          <Card className="text-center">
-            <CardContent>
-              <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--fg)' }}>{stats.streaks.longest}</div>
-              <div className="text-xs mt-1.5" style={{ color: 'var(--fg-muted)' }}>Best Streak</div>
-            </CardContent>
-          </Card>
+      {/* Hero: strain ring + today's stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
+        <StrainHero
+          strain={stats.today.strain}
+          workouts={stats.today.workouts}
+          duration={stats.today.duration}
+          calories={stats.today.calories}
+          target={stats.dailyTargets.strain}
+        />
+        <div className="lg:col-span-2">
+          <TodayTiles
+            steps={stats.today.steps || 0}
+            activeMinutes={stats.today.duration}
+            sleepHours={stats.metrics?.sleepHours ?? null}
+            workouts={stats.today.workouts}
+            workoutMinutes={stats.today.duration}
+            calories={stats.today.calories}
+            weekWorkouts={stats.weeklyProgress.workouts}
+            weekWorkoutsTarget={stats.weeklyProgress.targets.workouts}
+            last7Days={stats.last7Days || []}
+          />
         </div>
       </div>
+
+      {/* Hero trend chart */}
+      <TrendSection
+        dailyTargets={stats.dailyTargets}
+        weeklyStepsTarget={stats.weeklyProgress.targets.steps}
+      />
+
+      {/* Goals, streaks, training mix */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
+        <WeeklyGoals progress={stats.weeklyProgress} />
+        <StreaksCard
+          workoutStreak={stats.streaks}
+          exerciseStreak={stats.exerciseStreak}
+          sleepStreak={stats.sleepStreak}
+          nutritionStreak={stats.nutritionStreak}
+          workoutDates={stats.activeWorkoutDates || []}
+          exerciseQualifyingDates={stats.exerciseQualifyingDates || []}
+          sleepQualifyingDates={stats.sleepQualifyingDates || []}
+          nutritionQualifyingDates={stats.nutritionQualifyingDates || []}
+          dailyTargets={stats.dailyTargets}
+        />
+        <TrainingMix workouts={allWorkouts || []} />
+      </div>
+
+      {/* Recent workouts */}
+      <RecentWorkouts workouts={allWorkouts || []} />
+
+      {/* All-time strip */}
+      <Card className="py-4">
+        <div className="flex items-center justify-between px-2">
+          {allTime.map((item, i) => (
+            <div key={item.label} className="flex items-center gap-8 lg:gap-14">
+              {i > 0 && <div className="w-px h-7" style={{ background: 'var(--border)' }} />}
+              <div>
+                <div className="font-display text-xl font-semibold tabular-nums" style={{ color: 'var(--fg)' }}>{item.value}</div>
+                <div className="text-[11.5px]" style={{ color: 'var(--fg-muted)' }}>{item.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }

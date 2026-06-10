@@ -54,7 +54,7 @@ export function BadgeCard({ badgeKey, earnedAt, locked = false, progress, compac
   }
 
   return (
-    <Card className={`text-center transition-all ${locked ? 'opacity-40 grayscale' : 'hover:border-[#3a3a45]'}`}>
+    <Card className={`text-center transition-all ${locked ? 'opacity-75 grayscale-[55%]' : 'hover:border-[#3a3a45]'}`}>
       <div className="pt-4 pb-2">
         <span className="text-4xl">{badge.icon}</span>
       </div>

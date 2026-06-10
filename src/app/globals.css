@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #161618;
-  --color-foreground: #e8e6e1;
-  --color-card: #242429;
-  --color-border: #2a2a2e;
+  --color-background: #08080c;
+  --color-foreground: #ececf1;
+  --color-card: #111118;
+  --color-border: #1e1e26;
   --color-accent: #00d26a;
   --color-accent-teal: #00bcd4;
   --color-accent-orange: #ff6b35;
@@ -14,29 +14,29 @@
 
 /* Default: dark theme */
 :root {
-  --bg: #161618;
-  --bg-sidebar: #1a1a1d;
-  --bg-card: #242429;
-  --bg-elevated: #2c2c31;
-  --bg-hover: #353539;
-  --border: #2a2a2e;
-  --fg: #e8e6e1;
-  --fg-secondary: #a8a49e;
-  --fg-muted: #706c66;
+  --bg: #08080c;
+  --bg-sidebar: #0b0b10;
+  --bg-card: #111118;
+  --bg-elevated: #1a1a22;
+  --bg-hover: #22222c;
+  --border: #1e1e26;
+  --fg: #ececf1;
+  --fg-secondary: #a7a7b4;
+  --fg-muted: #6b6b78;
   --accent: #00d26a;
 }
 
 /* Light theme override */
 [data-theme="light"] {
-  --bg: #f5f0e8;
-  --bg-sidebar: #efe9df;
-  --bg-card: #faf8f4;
-  --bg-elevated: #e8e2d8;
-  --bg-hover: #dfd8cc;
-  --border: #ddd6c9;
-  --fg: #1a1a1a;
-  --fg-secondary: #4a4540;
-  --fg-muted: #8a8378;
+  --bg: #f4f4f7;
+  --bg-sidebar: #ededf2;
+  --bg-card: #ffffff;
+  --bg-elevated: #e9e9ef;
+  --bg-hover: #dfdfe7;
+  --border: #d9d9e2;
+  --fg: #16161a;
+  --fg-secondary: #45454e;
+  --fg-muted: #84848f;
 }
 
 * {
@@ -52,6 +52,21 @@ body {
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+/* Display numerals — Space Grotesk for big figures */
+.font-display {
+  font-family: var(--font-display), var(--font-inter), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Tile label — small uppercase card headings */
+.tile-label {
+  color: var(--fg-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 @keyframes pulse-glow {

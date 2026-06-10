@@ -14,12 +14,12 @@ interface TrendLineProps {
 export function TrendLine({ data, color = '#00d26a', label = 'Value', formatter }: TrendLineProps) {
   const { theme } = useTheme();
   const ct = {
-    tick: theme === 'light' ? '#8a8378' : '#706c66',
-    grid: theme === 'light' ? '#ddd6c9' : '#2a2a2e',
-    tooltipBg: theme === 'light' ? '#faf8f4' : '#1e1e22',
-    tooltipBorder: theme === 'light' ? '#ddd6c9' : '#2a2a2e',
-    tooltipColor: theme === 'light' ? '#1a1a1a' : '#e8e6e1',
-    cardBg: theme === 'light' ? '#faf8f4' : '#1e1e22',
+    tick: theme === 'light' ? '#84848f' : '#6b6b78',
+    grid: theme === 'light' ? '#d9d9e2' : '#1e1e26',
+    tooltipBg: theme === 'light' ? '#ffffff' : '#15151d',
+    tooltipBorder: theme === 'light' ? '#d9d9e2' : '#1e1e26',
+    tooltipColor: theme === 'light' ? '#16161a' : '#ececf1',
+    cardBg: theme === 'light' ? '#ffffff' : '#15151d',
   };
 
   const chartData = data.map((d) => ({

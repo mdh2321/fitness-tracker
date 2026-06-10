@@ -18,12 +18,13 @@ function formatDuration(minutes: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-function formatTime(dateStr: string): string {
+function formatTime(dateStr: string): string | null {
   // Parse Auto Export format "2026-03-06 01:07:31 +1100" or ISO strings
   const offsetMatch = dateStr.trim().match(/([+-])(\d{2}):?(\d{2})$/);
   if (offsetMatch) {
-    const normalized = dateStr.trim().replace(' ', 'T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+    const normalized = dateStr.trim().replace(' ', 'T').replace(/ ?([+-]\d{2}):?(\d{2})$/, '$1:$2');
     const date = new Date(normalized);
+    if (isNaN(date.getTime())) return null;
     const sign = offsetMatch[1] === '+' ? 1 : -1;
     const offsetH = parseInt(offsetMatch[2]);
     const offsetM = parseInt(offsetMatch[3]);
@@ -36,7 +37,9 @@ function formatTime(dateStr: string): string {
     const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
     return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
   }
-  return format(parseISO(dateStr), 'h:mm a');
+  const date = parseISO(dateStr);
+  if (isNaN(date.getTime())) return null;
+  return format(date, 'h:mm a');
 }
 
 export function LastNightCard({ daily, session, isLoading }: LastNightCardProps) {
@@ -105,13 +108,18 @@ export function LastNightCard({ daily, session, isLoading }: LastNightCardProps)
         </div>
 
         {/* Bedtime → Wake time */}
-        {session?.bedtime && session?.wake_time && (
-          <div className="flex items-center gap-2 mb-4 text-sm" style={{ color: 'var(--fg-secondary)' }}>
-            <span>{formatTime(session.bedtime)}</span>
-            <span style={{ color: 'var(--fg-muted)' }}>→</span>
-            <span>{formatTime(session.wake_time)}</span>
-          </div>
-        )}
+        {(() => {
+          const bedtime = session?.bedtime ? formatTime(session.bedtime) : null;
+          const wakeTime = session?.wake_time ? formatTime(session.wake_time) : null;
+          if (!bedtime || !wakeTime) return null;
+          return (
+            <div className="flex items-center gap-2 mb-4 text-sm" style={{ color: 'var(--fg-secondary)' }}>
+              <span>{bedtime}</span>
+              <span style={{ color: 'var(--fg-muted)' }}>→</span>
+              <span>{wakeTime}</span>
+            </div>
+          );
+        })()}
 
         {/* Sleep stages bar */}
         {stages.length > 0 && totalStageMinutes > 0 && (

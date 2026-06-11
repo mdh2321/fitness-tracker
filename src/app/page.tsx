@@ -106,7 +106,10 @@ export default function DashboardPage() {
       {/* Hero trend chart */}
       <TrendSection
         dailyTargets={stats.dailyTargets}
-        weeklyStepsTarget={stats.weeklyProgress.targets.steps}
+        weeklyTargets={{
+          steps: stats.weeklyProgress.targets.steps,
+          cardioMinutes: stats.weeklyProgress.targets.cardioMinutes,
+        }}
       />
 
       {/* Goals, streaks, training mix */}

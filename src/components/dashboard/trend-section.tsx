@@ -7,92 +7,102 @@ import { useSleepHistory } from '@/hooks/use-sleep';
 import { useTheme } from '@/components/providers/theme-provider';
 import {
   ComposedChart, Bar, Area, Line, Cell, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid, ReferenceLine,
+  ResponsiveContainer, CartesianGrid, ReferenceLine, ReferenceDot,
 } from 'recharts';
-import { LineChart as LineIcon, BarChart2 } from 'lucide-react';
 import {
   format, parseISO, subDays, eachWeekOfInterval, endOfWeek,
-  eachMonthOfInterval, endOfMonth,
+  eachMonthOfInterval, endOfMonth, getDaysInMonth,
 } from 'date-fns';
 
-type Period = 'daily' | 'weekly' | 'monthly';
+type Granularity = 'days' | 'weeks' | 'months';
 type Metric = 'strain' | 'steps' | 'activeTime' | 'workoutTime' | 'sleep';
-type ChartType = 'line' | 'bar';
 
-const PERIODS: { value: Period; label: string }[] = [
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
+const GRANULARITIES: { value: Granularity; label: string }[] = [
+  { value: 'days', label: 'Days' },
+  { value: 'weeks', label: 'Weeks' },
+  { value: 'months', label: 'Months' },
 ];
 
-const RANGES: { value: number; label: string }[] = [
-  { value: 30, label: '30d' },
-  { value: 90, label: '90d' },
-  { value: 365, label: '1y' },
-  { value: 3650, label: 'All' },
-];
+// Days shows the last 30 (fetch extra so the 7-day avg is correct from day one);
+// Weeks shows the last 26; Months shows all history.
+const FETCH_DAYS: Record<Granularity, number> = { days: 37, weeks: 183, months: 3650 };
+const SHOWN_DAYS = 30;
 
-const METRICS: { value: Metric; label: string }[] = [
-  { value: 'strain', label: 'Strain' },
-  { value: 'steps', label: 'Steps' },
-  { value: 'activeTime', label: 'Active time' },
-  { value: 'workoutTime', label: 'Workout time' },
-  { value: 'sleep', label: 'Sleep' },
+const METRICS: { value: Metric; label: string; color: string }[] = [
+  { value: 'strain', label: 'Strain', color: '#00d26a' },
+  { value: 'steps', label: 'Steps', color: '#ff6b35' },
+  { value: 'activeTime', label: 'Active time', color: '#00bcd4' },
+  { value: 'workoutTime', label: 'Workout time', color: '#a78bfa' },
+  { value: 'sleep', label: 'Sleep', color: '#8b5cf6' },
 ];
 
 interface DataPoint {
   date: string;
   value: number;
   avg?: number;
+  target?: number;
+  partial?: boolean;
+}
+
+interface ChartPoint extends DataPoint {
+  label: string;
+  prev?: number;
 }
 
 interface TrendSectionProps {
   dailyTargets: { strain: number; steps: number; activeMinutes: number; sleepMinutes: number };
-  weeklyStepsTarget: number;
+  weeklyTargets: { steps: number; cardioMinutes: number };
 }
 
-export function TrendSection({ dailyTargets, weeklyStepsTarget }: TrendSectionProps) {
-  const [period, setPeriod] = useState<Period>('daily');
+export function TrendSection({ dailyTargets, weeklyTargets }: TrendSectionProps) {
+  const [granularity, setGranularity] = useState<Granularity>('days');
   const [metric, setMetric] = useState<Metric>('strain');
-  const [range, setRange] = useState(90);
-  const [chartType, setChartType] = useState<ChartType>('bar');
   const { theme } = useTheme();
 
-  const { data: strainData } = useStrainData(range);
+  const fetchDays = FETCH_DAYS[granularity];
+  const { data: strainData } = useStrainData(fetchDays);
   const today = format(new Date(), 'yyyy-MM-dd');
-  const sleepFrom = format(subDays(new Date(), range), 'yyyy-MM-dd');
-  const { history: sleepHistory } = useSleepHistory(metric === 'sleep' ? sleepFrom : '', today);
+  const sleepFrom = format(subDays(new Date(), fetchDays), 'yyyy-MM-dd');
+  // Always fetched so switching to the Sleep chip is instant
+  const { history: sleepHistory } = useSleepHistory(sleepFrom, today);
 
   const config = useMemo(() => ({
     strain: {
-      color: 'var(--accent)', hex: undefined as string | undefined,
-      dailyTarget: dailyTargets.strain, weeklyTarget: undefined as number | undefined,
-      agg: 'avg' as const, unit: '', fmt: (v: number) => v.toFixed(1),
+      color: METRICS[0].color, kind: 'avg' as const,
+      dailyTarget: dailyTargets.strain as number | undefined,
+      weeklyTarget: undefined as number | undefined,
+      fmt: (v: number) => v.toFixed(1),
     },
     steps: {
-      color: '#ff6b35', hex: '#ff6b35',
-      dailyTarget: dailyTargets.steps, weeklyTarget: weeklyStepsTarget,
-      agg: 'sum' as const, unit: '', fmt: (v: number) => Math.round(v).toLocaleString(),
+      color: METRICS[1].color, kind: 'sum' as const,
+      dailyTarget: dailyTargets.steps as number | undefined,
+      weeklyTarget: weeklyTargets.steps as number | undefined,
+      fmt: (v: number) => Math.round(v).toLocaleString(),
     },
     activeTime: {
-      color: '#00bcd4', hex: '#00bcd4',
-      dailyTarget: dailyTargets.activeMinutes, weeklyTarget: undefined,
-      agg: 'sum' as const, unit: ' min', fmt: (v: number) => `${Math.round(v)} min`,
+      color: METRICS[2].color, kind: 'sum' as const,
+      dailyTarget: dailyTargets.activeMinutes as number | undefined,
+      weeklyTarget: undefined as number | undefined,
+      fmt: (v: number) => `${Math.round(v)} min`,
     },
     workoutTime: {
-      color: '#a78bfa', hex: '#a78bfa',
-      dailyTarget: undefined, weeklyTarget: undefined,
-      agg: 'sum' as const, unit: ' min', fmt: (v: number) => `${Math.round(v)} min`,
+      color: METRICS[3].color, kind: 'sum' as const,
+      dailyTarget: undefined as number | undefined,
+      weeklyTarget: weeklyTargets.cardioMinutes as number | undefined,
+      fmt: (v: number) => `${Math.round(v)} min`,
     },
     sleep: {
-      color: '#8b5cf6', hex: '#8b5cf6',
-      dailyTarget: Math.round((dailyTargets.sleepMinutes / 60) * 10) / 10, weeklyTarget: undefined,
-      agg: 'avg' as const, unit: 'h', fmt: (v: number) => `${v.toFixed(1)}h`,
+      color: METRICS[4].color, kind: 'avg' as const,
+      dailyTarget: (Math.round((dailyTargets.sleepMinutes / 60) * 10) / 10) as number | undefined,
+      weeklyTarget: undefined as number | undefined,
+      fmt: (v: number) => `${v.toFixed(1)}h`,
     },
-  }[metric]), [metric, dailyTargets, weeklyStepsTarget]);
+  }[metric]), [metric, dailyTargets, weeklyTargets]);
+
+  const isBar = config.kind === 'sum';
 
   // Daily series for the selected metric
-  const dailySeries: DataPoint[] = useMemo(() => {
+  const dailySeries = useMemo(() => {
     if (metric === 'sleep') {
       return [...sleepHistory]
         .sort((a, b) => a.date.localeCompare(b.date))
@@ -110,61 +120,116 @@ export function TrendSection({ dailyTargets, weeklyStepsTarget }: TrendSectionPr
       .map((d) => ({ date: d.date, value: extract(d) }));
   }, [metric, strainData, sleepHistory]);
 
-  // Aggregate into weeks/months: sum for volumes, avg of non-zero days for scores
+  // One target per bucket: averages keep the daily target at every granularity;
+  // sums scale to the bucket (explicit weekly setting wins over daily x 7)
+  const bucketTarget = useMemo(() => (start: Date): number | undefined => {
+    if (config.kind === 'avg') return config.dailyTarget;
+    if (granularity === 'days') return config.dailyTarget;
+    if (granularity === 'weeks') {
+      return config.weeklyTarget ?? (config.dailyTarget !== undefined ? config.dailyTarget * 7 : undefined);
+    }
+    return config.dailyTarget !== undefined ? config.dailyTarget * getDaysInMonth(start) : undefined;
+  }, [config, granularity]);
+
+  // Aggregate into days/weeks/months: sum for volumes, avg of non-zero days for scores
   const aggregated: DataPoint[] = useMemo(() => {
-    if (period === 'daily' || dailySeries.length < 2) {
-      // rolling 7-day average overlay for daily view
-      return dailySeries.map((d, i) => {
-        const window = dailySeries.slice(Math.max(0, i - 6), i + 1);
-        return { ...d, avg: window.reduce((a, b) => a + b.value, 0) / window.length };
-      });
+    if (dailySeries.length === 0) return [];
+    if (granularity === 'days') {
+      const cutoff = format(subDays(new Date(), SHOWN_DAYS - 1), 'yyyy-MM-dd');
+      return dailySeries
+        .map((d, i) => {
+          const window = dailySeries.slice(Math.max(0, i - 6), i + 1);
+          return {
+            ...d,
+            avg: window.reduce((a, b) => a + b.value, 0) / window.length,
+            target: config.dailyTarget,
+            partial: config.kind === 'sum' && d.date === today ? true : undefined,
+          };
+        })
+        .filter((d) => d.date >= cutoff);
     }
     const first = parseISO(dailySeries[0].date);
     const last = parseISO(dailySeries[dailySeries.length - 1].date);
-    const buckets = period === 'weekly'
+    let buckets = granularity === 'weeks'
       ? eachWeekOfInterval({ start: first, end: last }, { weekStartsOn: 1 })
           .map((s) => ({ start: s, end: endOfWeek(s, { weekStartsOn: 1 }) }))
       : eachMonthOfInterval({ start: first, end: last })
           .map((s) => ({ start: s, end: endOfMonth(s) }));
+    // Drop a leading week clipped by the fetch window (not by the start of history)
+    if (granularity === 'weeks' && buckets.length > 0 && buckets[0].start < subDays(new Date(), fetchDays)) {
+      buckets = buckets.slice(1);
+    }
     const byDate = new Map(dailySeries.map((d) => [d.date, d.value]));
     return buckets.map(({ start, end }) => {
       let sum = 0, count = 0;
       for (let d = start; d <= end; d = new Date(d.getTime() + 86400000)) {
         const v = byDate.get(format(d, 'yyyy-MM-dd'));
-        if (v !== undefined && (config.agg === 'sum' || v > 0)) { sum += v; count++; }
+        if (v !== undefined && (config.kind === 'sum' || v > 0)) { sum += v; count++; }
       }
-      const value = config.agg === 'avg'
+      const value = config.kind === 'avg'
         ? (count > 0 ? Math.round((sum / count) * 10) / 10 : 0)
         : sum;
-      return { date: format(start, 'yyyy-MM-dd'), value };
+      return {
+        date: format(start, 'yyyy-MM-dd'),
+        value,
+        target: bucketTarget(start),
+        partial: format(end, 'yyyy-MM-dd') >= today ? true : undefined,
+      };
     });
-  }, [dailySeries, period, config.agg]);
+  }, [dailySeries, granularity, config, today, fetchDays, bucketTarget]);
 
-  const target = period === 'daily' ? config.dailyTarget
-    : period === 'weekly' ? config.weeklyTarget
-    : undefined;
+  const dateFormat = granularity === 'months' ? 'MMM yy' : 'MMM d';
+  const chartData: ChartPoint[] = useMemo(() => aggregated.map((d, i) => ({
+    ...d,
+    label: format(parseISO(d.date), dateFormat),
+    prev: aggregated[i - 1]?.value,
+  })), [aggregated, dateFormat]);
 
-  // Footer stats
+  // Single reference line; per-bucket targets drive bar shading and tooltip deltas
+  // (month targets vary slightly with month length, the line sits at their mean)
+  const targetLine = useMemo(() => {
+    const ts = aggregated.map((d) => d.target).filter((t): t is number => t !== undefined);
+    return ts.length > 0 ? ts.reduce((a, b) => a + b, 0) / ts.length : undefined;
+  }, [aggregated]);
+
+  // Headline: current period vs the previous one
+  const headline = useMemo(() => {
+    if (granularity === 'days') {
+      if (dailySeries.length < 7) return null;
+      const week = dailySeries.slice(-7).map((d) => d.value);
+      const prevWeek = dailySeries.slice(-14, -7).map((d) => d.value);
+      const value = week.reduce((a, b) => a + b, 0) / week.length;
+      const prev = prevWeek.length === 7 ? prevWeek.reduce((a, b) => a + b, 0) / prevWeek.length : 0;
+      return {
+        value, label: '7-day avg',
+        delta: prev > 0 ? (value - prev) / prev : null,
+        deltaLabel: 'vs prior 7 days',
+      };
+    }
+    if (aggregated.length === 0) return null;
+    const cur = aggregated[aggregated.length - 1];
+    const prev = aggregated[aggregated.length - 2];
+    const noun = granularity === 'weeks' ? 'week' : 'month';
+    return {
+      value: cur.value,
+      label: cur.partial && config.kind === 'sum' ? `this ${noun} so far` : `this ${noun}`,
+      delta: prev && prev.value > 0 ? (cur.value - prev.value) / prev.value : null,
+      deltaLabel: `vs last ${noun}`,
+    };
+  }, [granularity, dailySeries, aggregated, config.kind]);
+
+  // Footer: peak + target hit rate over complete buckets
   const footer = useMemo(() => {
     if (aggregated.length === 0) return null;
-    const peak = aggregated.reduce((a, b) => (b.value > a.value ? b : a));
-    let avg7: number | null = null;
-    let avg7Dir: 'up' | 'down' | null = null;
-    let daysHit: number | null = null;
-    if (period === 'daily' && dailySeries.length >= 7) {
-      const lastWeek = dailySeries.slice(-7).map((d) => d.value);
-      const prevWeek = dailySeries.slice(-14, -7).map((d) => d.value);
-      avg7 = lastWeek.reduce((a, b) => a + b, 0) / lastWeek.length;
-      if (prevWeek.length === 7) {
-        const prev = prevWeek.reduce((a, b) => a + b, 0) / prevWeek.length;
-        avg7Dir = avg7 >= prev ? 'up' : 'down';
-      }
-    }
-    if (period === 'daily' && target !== undefined) {
-      daysHit = dailySeries.filter((d) => d.value >= target).length;
-    }
-    return { peak, avg7, avg7Dir, daysHit };
-  }, [aggregated, dailySeries, period, target]);
+    const complete = aggregated.filter((d) => !d.partial);
+    const pool = complete.length > 0 ? complete : aggregated;
+    const peak = pool.reduce((a, b) => (b.value > a.value ? b : a));
+    const hasTarget = complete.some((d) => d.target !== undefined);
+    const hit = hasTarget
+      ? complete.filter((d) => d.target !== undefined && d.value >= d.target).length
+      : null;
+    return { peak, hit, total: complete.length };
+  }, [aggregated]);
 
   const ct = {
     tick: theme === 'light' ? '#84848f' : '#6b6b78',
@@ -173,9 +238,63 @@ export function TrendSection({ dailyTargets, weeklyStepsTarget }: TrendSectionPr
     tooltipColor: theme === 'light' ? '#16161a' : '#ececf1',
   };
 
-  const dateFormat = period === 'monthly' ? 'MMM yy' : 'MMM d';
-  const chartData = aggregated.map((d) => ({ ...d, label: format(parseISO(d.date), dateFormat) }));
   const metricLabel = METRICS.find((m) => m.value === metric)!.label;
+  const bucketNoun = granularity === 'days' ? 'day' : granularity === 'weeks' ? 'week' : 'month';
+
+  // Ticks at Mondays (days) or month boundaries (weeks); months label every bar
+  const ticks = useMemo(() => {
+    if (granularity === 'days') {
+      return chartData.filter((d) => parseISO(d.date).getDay() === 1).map((d) => d.label);
+    }
+    if (granularity === 'weeks') {
+      const out: string[] = [];
+      let lastMonth = -1;
+      for (const d of chartData) {
+        const m = parseISO(d.date).getMonth();
+        if (m !== lastMonth) { out.push(d.label); lastMonth = m; }
+      }
+      return out;
+    }
+    return undefined;
+  }, [chartData, granularity]);
+
+  const renderTooltip = ({ active, payload }: { active?: boolean; payload?: ReadonlyArray<{ payload: ChartPoint }> }) => {
+    if (!active || !payload || payload.length === 0) return null;
+    const p = payload[0].payload;
+    const d = parseISO(p.date);
+    const title = granularity === 'days' ? format(d, 'EEE, MMM d')
+      : granularity === 'weeks' ? `Week of ${format(d, 'MMM d')}`
+      : format(d, 'MMMM yyyy');
+    const pct = p.prev !== undefined && p.prev > 0 ? ((p.value - p.prev) / p.prev) * 100 : null;
+    return (
+      <div style={{
+        background: ct.tooltipBg, border: `1px solid ${ct.grid}`, borderRadius: 10,
+        padding: '8px 12px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        fontSize: 12, color: ct.tooltipColor,
+      }}>
+        <div style={{ color: ct.tick, marginBottom: 4 }}>{title}{p.partial ? ' · in progress' : ''}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 9999, background: config.color }} />
+          {config.fmt(p.value)}
+        </div>
+        {granularity === 'days' && p.avg !== undefined && (
+          <div style={{ color: ct.tick, marginTop: 3 }}>7-day avg {config.fmt(p.avg)}</div>
+        )}
+        {p.target !== undefined && (
+          <div style={{ color: ct.tick, marginTop: 3 }}>
+            {p.partial || p.value >= p.target
+              ? `target ${config.fmt(p.target)}${!p.partial ? ' ✓' : ''}`
+              : `target ${config.fmt(p.target)} · ${config.fmt(p.target - p.value)} short`}
+          </div>
+        )}
+        {granularity !== 'days' && !p.partial && pct !== null && (
+          <div style={{ marginTop: 3, color: pct >= 0 ? '#00d26a' : '#ff3b5c' }}>
+            {pct >= 0 ? '↑' : '↓'} {Math.abs(pct).toFixed(0)}% vs prev {bucketNoun}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const segBtn = (active: boolean) => ({
     className: 'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
@@ -184,10 +303,12 @@ export function TrendSection({ dailyTargets, weeklyStepsTarget }: TrendSectionPr
       : { color: 'var(--fg-muted)' },
   });
 
+  const peakLabel = footer ? format(parseISO(footer.peak.date), dateFormat) : '';
+
   return (
     <Card>
-      <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-        {/* Metric chips */}
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+        {/* Metric chips, tinted with each metric's chart color */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {METRICS.map((m) => (
             <button
@@ -195,81 +316,102 @@ export function TrendSection({ dailyTargets, weeklyStepsTarget }: TrendSectionPr
               onClick={() => setMetric(m.value)}
               className="px-3.5 py-1.5 rounded-full text-xs font-medium border transition-colors"
               style={metric === m.value
-                ? { background: 'color-mix(in srgb, var(--accent) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--accent) 35%, transparent)', color: 'var(--accent)' }
+                ? { background: `color-mix(in srgb, ${m.color} 12%, transparent)`, borderColor: `color-mix(in srgb, ${m.color} 40%, transparent)`, color: m.color }
                 : { borderColor: 'transparent', color: 'var(--fg-muted)' }}
             >
               {m.label}
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center rounded-lg p-1 gap-0.5" style={{ background: 'var(--bg-elevated)' }}>
-            {PERIODS.map((p) => (
-              <button key={p.value} onClick={() => setPeriod(p.value)} {...segBtn(period === p.value)}>{p.label}</button>
-            ))}
-          </div>
-          <div className="flex items-center rounded-lg p-1 gap-0.5" style={{ background: 'var(--bg-elevated)' }}>
-            {RANGES.map((r) => (
-              <button key={r.value} onClick={() => setRange(r.value)} {...segBtn(range === r.value)}>{r.label}</button>
-            ))}
-          </div>
-          <div className="flex items-center rounded-lg p-1 gap-0.5" style={{ background: 'var(--bg-elevated)' }}>
-            <button onClick={() => setChartType('line')} title="Line chart" {...segBtn(chartType === 'line')}>
-              <LineIcon size={14} />
-            </button>
-            <button onClick={() => setChartType('bar')} title="Bar chart" {...segBtn(chartType === 'bar')}>
-              <BarChart2 size={14} />
-            </button>
-          </div>
+        <div className="flex items-center rounded-lg p-1 gap-0.5" style={{ background: 'var(--bg-elevated)' }}>
+          {GRANULARITIES.map((g) => (
+            <button key={g.value} onClick={() => setGranularity(g.value)} {...segBtn(granularity === g.value)}>{g.label}</button>
+          ))}
         </div>
       </div>
 
+      {headline && (
+        <div className="flex items-end gap-3 mb-2">
+          <div>
+            <div className="font-display text-2xl font-semibold tabular-nums" style={{ color: 'var(--fg)' }}>
+              {config.fmt(headline.value)}
+            </div>
+            <div className="text-[11.5px]" style={{ color: 'var(--fg-muted)' }}>
+              {metricLabel} · {headline.label}
+            </div>
+          </div>
+          {headline.delta !== null && (
+            <span
+              className="px-2 py-0.5 rounded-full text-[11px] font-medium mb-0.5"
+              style={{
+                background: `color-mix(in srgb, ${headline.delta >= 0 ? '#00d26a' : '#ff3b5c'} 12%, transparent)`,
+                color: headline.delta >= 0 ? '#00d26a' : '#ff3b5c',
+              }}
+            >
+              {headline.delta >= 0 ? '↑' : '↓'} {Math.abs(headline.delta * 100).toFixed(0)}% {headline.deltaLabel}
+            </span>
+          )}
+        </div>
+      )}
+
       <ResponsiveContainer width="100%" height={280}>
         <ComposedChart data={chartData} margin={{ top: 12, right: 10, bottom: 0, left: 0 }} barCategoryGap="22%">
+          <defs>
+            <linearGradient id={`trendFill-${metric}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={config.color} stopOpacity={0.25} />
+              <stop offset="100%" stopColor={config.color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
           <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} vertical={false} />
-          <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: ct.tick, fontSize: 11 }} interval="preserveStartEnd" minTickGap={40} />
+          <XAxis
+            dataKey="label" axisLine={false} tickLine={false}
+            tick={{ fill: ct.tick, fontSize: 11 }}
+            {...(ticks !== undefined
+              ? { ticks: ticks as string[], interval: 0 as const }
+              : { interval: 'preserveStartEnd' as const, minTickGap: 40 })}
+          />
           <YAxis
             axisLine={false} tickLine={false} width={48} domain={[0, 'auto']}
             tick={{ fill: ct.tick, fontSize: 11 }}
             tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : String(v))}
           />
-          <Tooltip
-            cursor={{ fill: 'rgba(128,128,128,0.06)' }}
-            contentStyle={{
-              backgroundColor: ct.tooltipBg, border: `1px solid ${ct.grid}`, borderRadius: '10px',
-              color: ct.tooltipColor, fontSize: '12px', padding: '8px 12px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            }}
-            formatter={(value: unknown, name: unknown) => [
-              config.fmt(Number(value)),
-              name === 'avg' ? '7-day avg' : metricLabel,
-            ]}
-          />
-          {chartType === 'bar' ? (
+          <Tooltip cursor={{ fill: 'rgba(128,128,128,0.06)' }} content={renderTooltip} />
+          {isBar ? (
             <Bar dataKey="value" radius={[3, 3, 0, 0]} maxBarSize={26}>
               {chartData.map((d) => (
-                <Cell
-                  key={d.date}
-                  fill={config.color}
-                  fillOpacity={target !== undefined ? (d.value >= target ? 1 : 0.35) : 0.8}
-                />
+                d.partial ? (
+                  <Cell
+                    key={d.date}
+                    fill={config.color} fillOpacity={0.15}
+                    stroke={config.color} strokeWidth={1.5} strokeDasharray="4 3"
+                  />
+                ) : (
+                  <Cell
+                    key={d.date}
+                    fill={config.color}
+                    fillOpacity={d.target !== undefined ? (d.value >= d.target ? 1 : 0.35) : 0.8}
+                  />
+                )
               ))}
             </Bar>
           ) : (
             <Area
               type="monotone" dataKey="value"
               stroke={config.color} strokeWidth={2.2}
-              fill={config.color} fillOpacity={0.08}
+              fill={`url(#trendFill-${metric})`}
               dot={false} activeDot={{ r: 4, fill: config.color }}
             />
           )}
-          {period === 'daily' && chartData.length >= 7 && (
+          {granularity === 'days' && chartData.length >= 7 && (
             <Line type="monotone" dataKey="avg" stroke="var(--fg)" strokeWidth={1.6} strokeOpacity={0.7} dot={false} activeDot={false} />
           )}
-          {target !== undefined && (
+          {!isBar && footer && footer.peak.value > 0 && (
+            <ReferenceDot x={peakLabel} y={footer.peak.value} r={3.5} fill={config.color} stroke={ct.tooltipBg} strokeWidth={1.5} />
+          )}
+          {targetLine !== undefined && (
             <ReferenceLine
-              y={target} stroke={ct.tick} strokeDasharray="4 5"
-              label={{ value: `target ${config.fmt(target)}`, position: 'insideTopRight', fill: ct.tick, fontSize: 11 }}
+              y={targetLine} stroke={ct.tick} strokeDasharray="4 5"
+              label={{ value: `target ${config.fmt(targetLine)}`, position: 'insideTopRight', fill: ct.tick, fontSize: 11 }}
             />
           )}
         </ComposedChart>
@@ -279,24 +421,17 @@ export function TrendSection({ dailyTargets, weeklyStepsTarget }: TrendSectionPr
         <div className="flex items-center gap-6 flex-wrap mt-3 text-xs" style={{ color: 'var(--fg-muted)' }}>
           <span>
             Peak <b className="font-semibold" style={{ color: 'var(--fg-secondary)' }}>
-              {config.fmt(footer.peak.value)} · {format(parseISO(footer.peak.date), 'MMM d')}
+              {config.fmt(footer.peak.value)} · {granularity === 'weeks' ? `wk of ${peakLabel}` : peakLabel}
             </b>
           </span>
-          {footer.avg7 != null && (
+          {footer.hit !== null && footer.total > 0 && (
             <span>
-              7-day avg <b className="font-semibold" style={{ color: 'var(--accent)' }}>
-                {config.fmt(footer.avg7)}{footer.avg7Dir ? (footer.avg7Dir === 'up' ? ' ↑' : ' ↓') : ''}
+              {bucketNoun.charAt(0).toUpperCase() + bucketNoun.slice(1)}s ≥ target <b className="font-semibold" style={{ color: 'var(--fg-secondary)' }}>
+                {footer.hit} of {footer.total}
               </b>
             </span>
           )}
-          {footer.daysHit != null && (
-            <span>
-              Days ≥ target <b className="font-semibold" style={{ color: 'var(--fg-secondary)' }}>
-                {footer.daysHit} of {dailySeries.length}
-              </b>
-            </span>
-          )}
-          {target !== undefined && (
+          {targetLine !== undefined && (
             <span className="ml-auto">- - - target from your goals in Settings</span>
           )}
         </div>

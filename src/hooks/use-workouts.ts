@@ -40,3 +40,15 @@ export async function deleteWorkout(id: number) {
   revalidateAll();
   return result;
 }
+
+export async function updateWorkout(id: number, data: any) {
+  const res = await fetch(`/api/workouts/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update workout');
+  const result = await res.json();
+  revalidateAll();
+  return result;
+}

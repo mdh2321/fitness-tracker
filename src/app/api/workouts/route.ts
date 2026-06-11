@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { workouts, exercises, exerciseSets, dailyStrain, userSettings } from '@/db/schema';
+import { workouts, exercises, exerciseSets, userSettings } from '@/db/schema';
 import { desc, eq, and, gte, lte } from 'drizzle-orm';
-import { calculateStrainScore, aggregateDailyStrain, calculateTotalVolume } from '@/lib/strain';
+import { calculateStrainScore, calculateTotalVolume } from '@/lib/strain';
+import { updateDailyStrain } from '@/lib/daily-strain';
 import { evaluateAchievements } from '@/lib/achievements';
 import { format, parseISO } from 'date-fns';
-import { PASSIVE_ACTIVITIES } from '@/lib/constants';
 import type { WorkoutType } from '@/lib/constants';
 
 export async function GET(request: NextRequest) {
@@ -126,69 +126,4 @@ export async function POST(request: NextRequest) {
   const newBadges = await evaluateAchievements(workoutId);
 
   return NextResponse.json({ workout: workout[0], newBadges }, { status: 201 });
-}
-
-async function updateDailyStrain(date: string) {
-  const dayWorkouts = await db
-    .select()
-    .from(workouts)
-    .where(eq(workouts.local_date, date));
-
-  // Preserve existing steps value
-  const existing = await db.select().from(dailyStrain).where(eq(dailyStrain.date, date)).get();
-  const existingSteps = existing?.steps || 0;
-
-  if (dayWorkouts.length === 0) {
-    // Keep the row if it has steps data, otherwise delete
-    if (existingSteps > 0) {
-      await db.update(dailyStrain).set({
-        strain_score: 0,
-        workout_count: 0,
-        total_duration: 0,
-        total_volume: 0,
-        total_calories: 0,
-      }).where(eq(dailyStrain.date, date));
-    } else {
-      await db.delete(dailyStrain).where(eq(dailyStrain.date, date));
-    }
-    return;
-  }
-
-  const strains = dayWorkouts.map((w) => w.strain_score);
-  const aggStrain = aggregateDailyStrain(strains);
-  const totalDuration = dayWorkouts.reduce((s, w) => s + w.duration_minutes, 0);
-  const totalCals = dayWorkouts.reduce((s, w) => s + (w.calories || 0), 0);
-  const activeCount = dayWorkouts.filter((w) => !PASSIVE_ACTIVITIES.has(w.name)).length;
-
-  // Calculate total volume for the day
-  let totalVolume = 0;
-  for (const w of dayWorkouts) {
-    const exs = await db.select().from(exercises).where(eq(exercises.workout_id, w.id));
-    for (const ex of exs) {
-      const sets = await db.select().from(exerciseSets).where(eq(exerciseSets.exercise_id, ex.id));
-      totalVolume += calculateTotalVolume(sets);
-    }
-  }
-
-  await db
-    .insert(dailyStrain)
-    .values({
-      date,
-      strain_score: aggStrain,
-      workout_count: activeCount,
-      total_duration: totalDuration,
-      total_volume: totalVolume,
-      total_calories: totalCals,
-      steps: existingSteps,
-    })
-    .onConflictDoUpdate({
-      target: dailyStrain.date,
-      set: {
-        strain_score: aggStrain,
-        workout_count: activeCount,
-        total_duration: totalDuration,
-        total_volume: totalVolume,
-        total_calories: totalCals,
-      },
-    });
 }

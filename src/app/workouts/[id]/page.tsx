@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { getStrainColor, getStrainLabel, getWorkoutColor } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
-import { ArrowLeft, Clock, Flame, Activity, Heart, Trash2, Route, Timer } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, Clock, Flame, Activity, Heart, Trash2, Route, Timer, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import type { WorkoutType } from '@/lib/constants';
 
@@ -46,9 +47,16 @@ export default function WorkoutDetailPage({ params }: { params: Promise<{ id: st
         <Button variant="ghost" onClick={() => router.back()}>
           <ArrowLeft className="mr-1 h-4 w-4" /> Back
         </Button>
-        <Button variant="destructive" size="sm" onClick={() => setConfirmOpen(true)}>
-          <Trash2 className="mr-1 h-4 w-4" /> Delete
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link href={`/workouts/${workout.id}/edit`}>
+            <Button variant="outline" size="sm">
+              <Pencil className="mr-1 h-4 w-4" /> Edit
+            </Button>
+          </Link>
+          <Button variant="destructive" size="sm" onClick={() => setConfirmOpen(true)}>
+            <Trash2 className="mr-1 h-4 w-4" /> Delete
+          </Button>
+        </div>
       </div>
 
       <Card>

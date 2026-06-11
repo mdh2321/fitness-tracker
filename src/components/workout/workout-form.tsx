@@ -9,12 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { createWorkout } from '@/hooks/use-workouts';
+import { createWorkout, updateWorkout } from '@/hooks/use-workouts';
 import { WORKOUT_NAME_OPTIONS, MUSCLE_GROUPS, EXERCISE_CATEGORIES } from '@/lib/constants';
 import { Plus, Trash2, ChevronRight, ChevronLeft, Save } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import type { WorkoutType, ExerciseCategory, MuscleGroup } from '@/lib/constants';
+import type { WorkoutWithExercises } from '@/lib/types';
 
 interface SetForm {
   set_number: number;
@@ -46,25 +47,55 @@ interface WorkoutFormData {
   exerciseList: ExerciseForm[];
 }
 
-export function WorkoutForm() {
+export function WorkoutForm({ workout }: { workout?: WorkoutWithExercises }) {
   const router = useRouter();
+  const isEdit = workout != null;
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<string | null>(() => {
+    if (!workout) return null;
+    return WORKOUT_NAME_OPTIONS.some((o) => o.label === workout.name) ? workout.name : 'Other';
+  });
 
   const { register, handleSubmit, watch, setValue, control } = useForm<WorkoutFormData>({
-    defaultValues: {
-      type: 'strength',
-      name: '',
-      started_at: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
-      duration_minutes: 60,
-      perceived_effort: 7,
-      avg_heart_rate: null,
-      max_heart_rate: null,
-      calories: null,
-      notes: '',
-      exerciseList: [],
-    },
+    defaultValues: workout
+      ? {
+          type: workout.type,
+          name: workout.name,
+          started_at: format(parseISO(workout.started_at), "yyyy-MM-dd'T'HH:mm"),
+          duration_minutes: workout.duration_minutes,
+          perceived_effort: workout.perceived_effort,
+          avg_heart_rate: workout.avg_heart_rate,
+          max_heart_rate: workout.max_heart_rate,
+          calories: workout.calories,
+          notes: workout.notes ?? '',
+          exerciseList: (workout.exercises ?? []).map((ex) => ({
+            name: ex.name,
+            category: ex.category,
+            muscle_group: ex.muscle_group,
+            sets: (ex.sets ?? []).map((s) => ({
+              set_number: s.set_number,
+              reps: s.reps,
+              weight_kg: s.weight_kg,
+              distance_km: s.distance_km,
+              duration_seconds: s.duration_seconds,
+              is_warmup: s.is_warmup,
+              is_pr: s.is_pr,
+            })),
+          })),
+        }
+      : {
+          type: 'strength',
+          name: '',
+          started_at: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+          duration_minutes: 60,
+          perceived_effort: 7,
+          avg_heart_rate: null,
+          max_heart_rate: null,
+          calories: null,
+          notes: '',
+          exerciseList: [],
+        },
   });
 
   const { fields: exerciseFields, append: appendExercise, remove: removeExercise } = useFieldArray({
@@ -118,18 +149,27 @@ export function WorkoutForm() {
   const onSubmit = async (data: WorkoutFormData) => {
     setSaving(true);
     try {
-      const result = await createWorkout({
-        ...data,
-        started_at: new Date(data.started_at).toISOString(),
-        ended_at: null,
-      });
-      if (result.newBadges && result.newBadges.length > 0) {
-        result.newBadges.forEach((badge: any) => {
-          toast.success(`${badge.icon} ${badge.name}`, { description: badge.description });
+      if (isEdit) {
+        await updateWorkout(workout.id, {
+          ...data,
+          started_at: new Date(data.started_at).toISOString(),
         });
+        toast.success('Workout updated!');
+        router.push(`/workouts/${workout.id}`);
+      } else {
+        const result = await createWorkout({
+          ...data,
+          started_at: new Date(data.started_at).toISOString(),
+          ended_at: null,
+        });
+        if (result.newBadges && result.newBadges.length > 0) {
+          result.newBadges.forEach((badge: any) => {
+            toast.success(`${badge.icon} ${badge.name}`, { description: badge.description });
+          });
+        }
+        toast.success('Workout saved!');
+        router.push('/workouts');
       }
-      toast.success('Workout saved!');
-      router.push('/workouts');
       router.refresh();
     } catch {
       toast.error('Failed to save workout');
@@ -423,7 +463,7 @@ export function WorkoutForm() {
                 <ChevronLeft className="mr-1 h-4 w-4" /> Back
               </Button>
               <Button type="submit" disabled={saving}>
-                <Save className="mr-1 h-4 w-4" /> {saving ? 'Saving...' : 'Save Workout'}
+                <Save className="mr-1 h-4 w-4" /> {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Save Workout'}
               </Button>
             </div>
           </CardContent>

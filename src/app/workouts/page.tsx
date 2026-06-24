@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  TrendingUp,
 } from 'lucide-react';
 import {
   format,
@@ -35,11 +36,12 @@ import {
 import { getWorkoutColor, getStrainColor, PASSIVE_ACTIVITIES } from '@/lib/constants';
 import { MonthGrid } from '@/components/calendar/month-grid';
 import { DayDetail } from '@/components/calendar/day-detail';
+import { MonthlyTypeLine } from '@/components/charts/monthly-type-line';
 import type { Workout, DailyStrain, DailySleep } from '@/lib/types';
 import type { WorkoutType } from '@/lib/constants';
 
 const PAGE_SIZE = 50;
-type ViewMode = 'list' | 'calendar' | 'table';
+type ViewMode = 'list' | 'calendar' | 'table' | 'trend';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -179,6 +181,7 @@ export default function WorkoutsPage() {
     { mode: 'list', icon: List, label: 'List' },
     { mode: 'calendar', icon: CalendarDays, label: 'Calendar' },
     { mode: 'table', icon: Table2, label: 'Table' },
+    { mode: 'trend', icon: TrendingUp, label: 'Trend' },
   ];
 
   return (
@@ -217,7 +220,7 @@ export default function WorkoutsPage() {
       </div>
 
       {/* Filter toggles (list + table views) */}
-      {view !== 'calendar' && workoutNames.length > 1 && (
+      {(view === 'list' || view === 'table') && workoutNames.length > 1 && (
         <div className="flex flex-wrap gap-2">
           {workoutNames.map(({ name, type }) => {
             const active = !hiddenNames.has(name);
@@ -262,6 +265,11 @@ export default function WorkoutsPage() {
             </Button>
           </Link>
         </div>
+      )}
+
+      {/* ── TREND VIEW ── */}
+      {view === 'trend' && workouts && workouts.length > 0 && (
+        <MonthlyTypeLine startMonth="2026-01" />
       )}
 
       {/* ── LIST VIEW ── */}
@@ -433,13 +441,13 @@ export default function WorkoutsPage() {
         </div>
       )}
 
-      {view !== 'calendar' && workouts && workouts.length > 0 && filtered.length === 0 && (
+      {(view === 'list' || view === 'table') && workouts && workouts.length > 0 && filtered.length === 0 && (
         <div className="text-center py-12">
           <p className="text-sm" style={{ color: 'var(--fg-muted)' }}>All workout types are hidden. Toggle some back on above.</p>
         </div>
       )}
 
-      {view !== 'calendar' && canLoadMore && (
+      {(view === 'list' || view === 'table') && canLoadMore && (
         <div className="flex justify-center pt-2">
           <Button variant="ghost" onClick={() => setLimit(l => l + PAGE_SIZE)}>
             Load more

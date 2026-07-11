@@ -53,6 +53,8 @@ export default function SettingsPage() {
         daily_steps_target: parseInt(data.daily_steps_target),
         daily_strain_target: parseFloat(data.daily_strain_target),
         fitness_goal: data.fitness_goal as FitnessGoal,
+        daily_calorie_target: parseInt(data.daily_calorie_target),
+        daily_protein_target: parseInt(data.daily_protein_target),
       });
       toast.success('Settings saved');
     } catch {
@@ -258,6 +260,18 @@ export default function SettingsPage() {
               <div>
                 <Label>Daily Steps</Label>
                 <Input type="number" min={1000} step={1000} {...register('daily_steps_target')} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Calories (kcal)</Label>
+                <Input type="number" min={1000} max={6000} step={50} {...register('daily_calorie_target')} />
+                <p className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Daily calorie target</p>
+              </div>
+              <div>
+                <Label>Protein (g)</Label>
+                <Input type="number" min={40} max={400} step={5} {...register('daily_protein_target')} />
+                <p className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Daily protein target</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

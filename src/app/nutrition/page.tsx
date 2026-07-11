@@ -1,127 +1,74 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { format, subDays, addDays, parseISO } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useNutrition } from '@/hooks/use-nutrition';
-import { NutritionScoreCard } from '@/components/nutrition/nutrition-score-card';
+import { useNutrition, useNutritionTrends, type ManualMealInput } from '@/hooks/use-nutrition';
+import { MacroHero } from '@/components/nutrition/macro-hero';
 import { MealInput } from '@/components/nutrition/meal-input';
 import { MealList } from '@/components/nutrition/meal-list';
-import { NutritionHistory } from '@/components/nutrition/nutrition-history';
+import { DailyTrendCard, WeeklyTotalsCard } from '@/components/nutrition/nutrition-charts';
 import { Card, CardContent } from '@/components/ui/card';
-import useSWR from 'swr';
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 function toLocalDate(date: Date) {
   return format(date, 'yyyy-MM-dd');
 }
 
-function toViewMonth(dateStr: string) {
-  return dateStr.slice(0, 7); // 'YYYY-MM'
-}
-
-function datesForMonth(viewMonth: string): string[] {
-  const [yearStr, monthStr] = viewMonth.split('-');
-  const year = parseInt(yearStr);
-  const month = parseInt(monthStr);
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return Array.from({ length: daysInMonth }, (_, i) => `${year}-${pad(month)}-${pad(i + 1)}`);
-}
-
 export default function NutritionPage() {
   const today = toLocalDate(new Date());
   const [selectedDate, setSelectedDate] = useState(today);
-  const [viewMonth, setViewMonth] = useState(() => toViewMonth(today));
-  const [isScoring, setIsScoring] = useState(false);
+  const [isMutating, setIsMutating] = useState(false);
 
   const {
     meals,
-    score,
-    summary,
+    totals,
+    targets,
+    week,
     isLoading,
     addMeal,
+    addPhotoMeal,
+    addManualMeal,
+    updateMeal,
     deleteMeal,
   } = useNutrition(selectedDate);
 
-  const monthDates = useMemo(() => datesForMonth(viewMonth), [viewMonth]);
+  const { days: trendDays, targets: trendTargets, mutate: mutateTrends } = useNutritionTrends();
 
-  const { data: historyData, mutate: mutateHistory } = useSWR(
-    `/api/nutrition/history?dates=${monthDates.join(',')}`,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
-
-  const scores: Record<string, number | null> = historyData?.scores ?? {};
-
-  // Month navigation
-  const currentMonth = toViewMonth(today);
-  const canGoNextMonth = viewMonth < currentMonth;
-
-  const handlePrevMonth = () => {
-    const [y, m] = viewMonth.split('-').map(Number);
-    const prev = new Date(y, m - 2, 1);
-    setViewMonth(format(prev, 'yyyy-MM'));
-  };
-
-  const handleNextMonth = () => {
-    if (!canGoNextMonth) return;
-    const [y, m] = viewMonth.split('-').map(Number);
-    const next = new Date(y, m, 1);
-    setViewMonth(format(next, 'yyyy-MM'));
-  };
-
-  // Day navigation (arrows in header)
   const canGoForward = selectedDate < today;
 
-  const handlePrevDay = () => {
-    const newDate = toLocalDate(subDays(parseISO(selectedDate), 1));
-    setSelectedDate(newDate);
-    const newMonth = toViewMonth(newDate);
-    if (newMonth !== viewMonth) setViewMonth(newMonth);
-  };
-
+  const handlePrevDay = () => setSelectedDate(toLocalDate(subDays(parseISO(selectedDate), 1)));
   const handleNextDay = () => {
-    if (!canGoForward) return;
-    const newDate = toLocalDate(addDays(parseISO(selectedDate), 1));
-    setSelectedDate(newDate);
-    const newMonth = toViewMonth(newDate);
-    if (newMonth !== viewMonth) setViewMonth(newMonth);
+    if (canGoForward) setSelectedDate(toLocalDate(addDays(parseISO(selectedDate), 1)));
   };
 
-  // Calendar day click — if it's in a different month from viewMonth, follow it
-  const handleSelectDate = (date: string) => {
-    setSelectedDate(date);
-    const newMonth = toViewMonth(date);
-    if (newMonth !== viewMonth) setViewMonth(newMonth);
-  };
+  const withRefresh = useCallback(
+    <T extends unknown[]>(fn: (...args: T) => Promise<void>) =>
+      async (...args: T) => {
+        setIsMutating(true);
+        try {
+          await fn(...args);
+          mutateTrends();
+        } finally {
+          setIsMutating(false);
+        }
+      },
+    [mutateTrends],
+  );
 
-  const handleAddMeal = useCallback(async (description: string) => {
-    setIsScoring(true);
-    try {
-      await addMeal(description);
-      mutateHistory();
-    } finally {
-      setIsScoring(false);
-    }
-  }, [addMeal, mutateHistory]);
-
-  const handleDeleteMeal = useCallback(async (id: number) => {
-    setIsScoring(true);
-    try {
-      await deleteMeal(id);
-      mutateHistory();
-    } finally {
-      setIsScoring(false);
-    }
-  }, [deleteMeal, mutateHistory]);
+  const handleAddMeal = useMemo(() => withRefresh(addMeal), [withRefresh, addMeal]);
+  const handleAddPhoto = useMemo(() => withRefresh(addPhotoMeal), [withRefresh, addPhotoMeal]);
+  const handleAddManual = useMemo(() => withRefresh(addManualMeal), [withRefresh, addManualMeal]);
+  const handleDelete = useMemo(() => withRefresh(deleteMeal), [withRefresh, deleteMeal]);
+  const handleUpdate = useMemo(
+    () => withRefresh((id: number, patch: Partial<ManualMealInput>) => updateMeal(id, patch)),
+    [withRefresh, updateMeal],
+  );
 
   const displayDate = format(parseISO(selectedDate), 'EEEE, MMMM d');
   const isToday = selectedDate === today;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-4">
       {/* Header + selected day nav */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold" style={{ color: 'var(--fg)' }}>Nutrition</h1>
@@ -149,49 +96,43 @@ export default function NutritionPage() {
         </div>
       </div>
 
-      {/* Score card + meal log */}
-      <div className="grid grid-cols-1 md:grid-cols-[minmax(300px,360px)_1fr] gap-6">
-        <NutritionScoreCard
-          score={score}
-          summary={summary}
-          isLoading={isLoading}
-          isScoring={isScoring}
-          mealCount={meals.length}
-        />
+      {/* State of the day: calories, protein, macro split, weekly trackers */}
+      <MacroHero totals={totals} targets={targets} week={week} isLoading={isLoading} />
 
-        <Card className="flex flex-col">
-          <CardContent className="pt-4 flex flex-col gap-4 flex-1 p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold" style={{ color: 'var(--fg)' }}>Meals</span>
-              {meals.length > 0 && (
-                <span
-                  className="text-xs px-2 py-0.5 rounded-full font-medium"
-                  style={{ background: 'rgba(0,210,106,0.12)', color: '#00d26a' }}
-                >
-                  {meals.length} logged
-                </span>
-              )}
-            </div>
-            <MealList meals={meals} onDelete={handleDeleteMeal} disabled={isScoring} />
-            <div className="mt-auto pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-              <MealInput onAdd={handleAddMeal} disabled={isScoring} />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Meals: full-width tabular log with input */}
+      <Card>
+        <CardContent className="pt-4 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-semibold" style={{ color: 'var(--fg)' }}>Meals</span>
+            {meals.length > 0 && (
+              <span
+                className="text-xs px-2 py-0.5 rounded-full font-medium tabular-nums"
+                style={{ background: 'rgba(0,210,106,0.12)', color: '#00d26a' }}
+              >
+                {meals.length} logged
+              </span>
+            )}
+          </div>
+          <MealList meals={meals} onDelete={handleDelete} onUpdate={handleUpdate} disabled={isMutating} />
+          <div className="mt-4">
+            <MealInput
+              onAdd={handleAddMeal}
+              onAddPhoto={handleAddPhoto}
+              onAddManual={handleAddManual}
+              disabled={isMutating}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Daily trends vs targets */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <DailyTrendCard metric="calories" days={trendDays} target={trendTargets.calories} />
+        <DailyTrendCard metric="protein" days={trendDays} target={trendTargets.protein_g} />
       </div>
 
-      {/* Month calendar */}
-      <div className="w-full">
-        <NutritionHistory
-          viewMonth={viewMonth}
-          scores={scores}
-          selectedDate={selectedDate}
-          onSelectDate={handleSelectDate}
-          onPrevMonth={handlePrevMonth}
-          onNextMonth={handleNextMonth}
-          canGoNext={canGoNextMonth}
-        />
-      </div>
+      {/* 7-day totals, week by week */}
+      <WeeklyTotalsCard days={trendDays} targets={trendTargets} />
     </div>
   );
 }

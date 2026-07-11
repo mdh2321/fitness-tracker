@@ -11,6 +11,155 @@ const client = new Anthropic();
 export interface NutritionAIMeal {
   id: number;
   description: string;
+  calories?: number | null;
+  protein_g?: number | null;
+}
+
+export interface MealEstimateInput {
+  text?: string;
+  image?: { data: string; media_type: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' };
+}
+
+export interface MealItemEstimate {
+  name: string;
+  quantity: string;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+}
+
+export interface MealEstimate {
+  description: string;
+  emoji: string;
+  grade: Grade;
+  items: MealItemEstimate[];
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  assumptions: string;
+  confidence: 'low' | 'medium' | 'high';
+}
+
+export interface MealEstimateContext {
+  fitness_goal: FitnessGoal;
+  weight_kg: number;
+}
+
+/**
+ * Estimate macros for a single meal from a text description and/or photo.
+ * Runs on every meal add, so it must be a single fast call.
+ */
+export async function estimateMeal(
+  input: MealEstimateInput,
+  context: MealEstimateContext,
+): Promise<MealEstimate> {
+  const goalLabel = FITNESS_GOAL_LABELS[context.fitness_goal];
+
+  const prompt = `You are Arc's nutritionist. Estimate the nutritional content of ONE meal as accurately as possible from a short text description${input.image ? ' and a photo' : ''}.
+
+USER CONTEXT
+- Fitness goal: ${goalLabel}
+- Bodyweight: ${context.weight_kg}kg
+
+${input.image ? `PHOTO
+The photo above is the primary evidence. Identify every food item visible, estimate portion sizes from plate/bowl/hand/cutlery scale cues, and estimate cooking method (oil, butter, frying vs grilling) from appearance. ${input.text?.trim() ? `The user added this note — treat it as authoritative where it conflicts with the photo: "${input.text.trim()}"` : 'No text note was provided.'}` : `MEAL DESCRIPTION
+"${input.text?.trim()}"`}
+
+ESTIMATION RULES
+- Break the meal into its component items. Estimate each item separately, then total.
+- Read portion from the description/photo. "small", "half", "a bite" mean smaller; "big", "large", "double", "loaded" mean larger. Otherwise assume a normal adult home serving.
+- Assume home cooking with typical amounts of oil/butter unless a brand or restaurant is named. For named chains, use their published typical values.
+- Count cooking fat, dressings, and sauces — these are the most commonly under-counted calories.
+- Plain coffee drinks: espresso ≈ 0, long black ≈ 5, cappuccino/latte with regular milk ≈ 80-150 kcal depending on size. No sugar unless stated.
+- Round calories to the nearest 10, macros to the nearest gram.
+- Be decisive. This is a quick logging flow — produce your best single estimate, never a range, never a request for more detail.
+
+GRADE
+Assign one letter grade A-F for meal quality relative to the ${goalLabel.toLowerCase()} goal: A = whole-food, protein-forward; C = average/mixed; F = junk-dominated. A plain coffee is an A, a pastry a C, fast food a D, crisps an E, alcohol an F.
+
+EMOJI
+Pick ONE emoji that captures the dish (🥗 salad, 🍔 burger, 🍜 ramen, 🥚 eggs, 🍛 curry…). Never 🍽️.
+
+DESCRIPTION
+Write a short human-readable description of the meal (max ~10 words). ${input.image ? 'Describe what you see in the photo, e.g. "Grilled chicken, rice and broccoli".' : 'Lightly normalise the user\'s text but keep their wording where possible.'}
+
+ASSUMPTIONS
+One short sentence stating the key assumptions driving the estimate (portion size, cooking method, milk type…).
+
+Call record_meal_estimate with the result.`;
+
+  const tools: Anthropic.Tool[] = [
+    {
+      name: 'record_meal_estimate',
+      description: 'Record the nutritional estimate for the meal.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          description: { type: 'string', description: 'Short human-readable meal description (max ~10 words)' },
+          emoji: { type: 'string', description: 'A single emoji for the dish' },
+          grade: { type: 'string', enum: ['A', 'B', 'C', 'D', 'E', 'F'] },
+          items: {
+            type: 'array',
+            description: 'Component items of the meal',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                quantity: { type: 'string', description: 'e.g. "1 cup", "150g", "2 slices"' },
+                calories: { type: 'number' },
+                protein_g: { type: 'number' },
+                carbs_g: { type: 'number' },
+                fat_g: { type: 'number' },
+              },
+              required: ['name', 'quantity', 'calories', 'protein_g', 'carbs_g', 'fat_g'],
+            },
+          },
+          calories: { type: 'number', description: 'Total calories (kcal)' },
+          protein_g: { type: 'number', description: 'Total protein (g)' },
+          carbs_g: { type: 'number', description: 'Total carbohydrates (g)' },
+          fat_g: { type: 'number', description: 'Total fat (g)' },
+          assumptions: { type: 'string', description: 'One sentence: key assumptions behind the estimate' },
+          confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
+        },
+        required: ['description', 'emoji', 'grade', 'items', 'calories', 'protein_g', 'carbs_g', 'fat_g', 'assumptions', 'confidence'],
+      },
+    },
+  ];
+
+  const content: Anthropic.ContentBlockParam[] = [];
+  if (input.image) {
+    content.push({
+      type: 'image',
+      source: { type: 'base64', media_type: input.image.media_type, data: input.image.data },
+    });
+  }
+  content.push({ type: 'text', text: prompt });
+
+  const response = await client.messages.create({
+    model: 'claude-opus-4-8',
+    max_tokens: 2048,
+    tools,
+    tool_choice: { type: 'tool', name: 'record_meal_estimate' },
+    messages: [{ role: 'user', content }],
+  });
+
+  const toolUse = response.content.find(
+    (c): c is Anthropic.ToolUseBlock => c.type === 'tool_use',
+  );
+  if (!toolUse || toolUse.name !== 'record_meal_estimate') {
+    throw new Error('Model did not call record_meal_estimate');
+  }
+
+  const est = toolUse.input as MealEstimate;
+  est.calories = Math.max(0, Math.round(est.calories));
+  est.protein_g = Math.max(0, Math.round(est.protein_g));
+  est.carbs_g = Math.max(0, Math.round(est.carbs_g));
+  est.fat_g = Math.max(0, Math.round(est.fat_g));
+  if (!Array.isArray(est.items)) est.items = [];
+
+  return est;
 }
 
 export interface NutritionAIContext {
@@ -19,6 +168,8 @@ export interface NutritionAIContext {
   today_strain?: number | null;
   today_workouts?: Array<{ name: string; duration_minutes: number }>;
   last_night_sleep_hours?: number | null;
+  calorie_target?: number;
+  protein_target?: number;
 }
 
 export interface NutritionAIResult {
@@ -66,7 +217,22 @@ ${trainingLine ? `- Training today: ${trainingLine}` : '- No training logged tod
 ${sleepLine ? `- Last night's sleep: ${sleepLine}` : ''}
 
 MEALS LOGGED FOR ${date}
-${meals.map((m, i) => `${i + 1}. [id ${m.id}] ${m.description}`).join('\n')}
+${meals.map((m, i) => {
+  const macros = m.calories != null
+    ? ` (~${m.calories} kcal${m.protein_g != null ? `, ${Math.round(m.protein_g)}g protein` : ''})`
+    : '';
+  return `${i + 1}. [id ${m.id}] ${m.description}${macros}`;
+}).join('\n')}
+${(() => {
+  const withCals = meals.filter(m => m.calories != null);
+  if (withCals.length === 0) return '';
+  const totalCal = withCals.reduce((s, m) => s + (m.calories ?? 0), 0);
+  const totalPro = Math.round(withCals.reduce((s, m) => s + (m.protein_g ?? 0), 0));
+  const targetLine = context.calorie_target
+    ? ` Daily targets: ${context.calorie_target} kcal, ${context.protein_target ?? '—'}g protein.`
+    : '';
+  return `\nDAY SO FAR: ~${totalCal} kcal, ~${totalPro}g protein.${targetLine} The score is primarily about food QUALITY. NEVER penalise being under the calorie or protein targets — the day may not be finished and later meals are still coming. The only way these numbers should move the score is downward on a clear calorie blow-out (well over target).`;
+})()}
 
 PORTION SIZE
 Read portion from the description itself. Words like "small", "little", "handful", "mini", "half" mean smaller than typical; "big", "large", "huge", "loaded", "double" mean larger. Otherwise assume a normal home-cooked serving. Don't ask for more detail.

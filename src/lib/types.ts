@@ -84,6 +84,8 @@ export interface UserSettings {
   unlocked_colors: string;
   pinned_badges: string;
   fitness_goal: FitnessGoal;
+  daily_calorie_target: number;
+  daily_protein_target: number;
 }
 
 export interface WorkoutWithExercises extends Workout {

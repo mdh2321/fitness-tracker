@@ -32,6 +32,8 @@ export async function rescoreDay(date: string): Promise<void> {
   const aiMeals: NutritionAIMeal[] = meals.map(m => ({
     id: m.id,
     description: m.description,
+    calories: m.calories,
+    protein_g: m.protein_g,
   }));
 
   let result;
@@ -45,6 +47,8 @@ export async function rescoreDay(date: string): Promise<void> {
         duration_minutes: w.duration_minutes,
       })),
       last_night_sleep_hours,
+      calorie_target: settings?.daily_calorie_target,
+      protein_target: settings?.daily_protein_target,
     });
   } catch (e) {
     console.error('nutrition AI failed:', e);

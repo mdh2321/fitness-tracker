@@ -144,6 +144,28 @@ const initPromise = (async () => {
     await client.execute(`ALTER TABLE meal_entries ADD COLUMN ${col.name} ${col.type}`).catch(() => {});
   }
 
+  // Nutrition v4: macro tracking — per-meal macro estimates + daily targets
+  const macroColumns = [
+    { name: 'calories', type: 'INTEGER' },
+    { name: 'protein_g', type: 'REAL' },
+    { name: 'carbs_g', type: 'REAL' },
+    { name: 'fat_g', type: 'REAL' },
+    { name: 'items', type: 'TEXT' },
+    { name: 'assumptions', type: 'TEXT' },
+    { name: 'source', type: "TEXT NOT NULL DEFAULT 'app'" },
+    { name: 'input_method', type: "TEXT NOT NULL DEFAULT 'text'" },
+  ];
+  for (const col of macroColumns) {
+    await client.execute(`ALTER TABLE meal_entries ADD COLUMN ${col.name} ${col.type}`).catch(() => {});
+  }
+  const macroTargetColumns = [
+    { name: 'daily_calorie_target', type: 'INTEGER NOT NULL DEFAULT 2400' },
+    { name: 'daily_protein_target', type: 'INTEGER NOT NULL DEFAULT 140' },
+  ];
+  for (const col of macroTargetColumns) {
+    await client.execute(`ALTER TABLE user_settings ADD COLUMN ${col.name} ${col.type}`).catch(() => {});
+  }
+
   // Nutrition v3: drop columns the AI no longer produces — portion is inferred
   // from description, day overview is a single summary paragraph.
   const droppedColumns: Array<{ table: string; column: string }> = [

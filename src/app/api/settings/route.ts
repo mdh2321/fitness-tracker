@@ -43,6 +43,8 @@ export async function PUT(request: NextRequest) {
       accent_color,
       pinned_badges,
       fitness_goal,
+      daily_calorie_target,
+      daily_protein_target,
     } = body;
 
     let settings = await db.select().from(userSettings).get();
@@ -74,6 +76,8 @@ export async function PUT(request: NextRequest) {
         accent_color: accent_color ?? settings.accent_color,
         pinned_badges: pinned_badges !== undefined ? (typeof pinned_badges === 'string' ? pinned_badges : JSON.stringify(pinned_badges)) : settings.pinned_badges,
         fitness_goal: fitness_goal ?? settings.fitness_goal,
+        daily_calorie_target: daily_calorie_target ?? settings.daily_calorie_target,
+        daily_protein_target: daily_protein_target ?? settings.daily_protein_target,
       })
       .where(eq(userSettings.id, settings.id));
 

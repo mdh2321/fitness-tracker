@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, dbReady } from '@/db';
-import { mealEntries, dailyNutrition } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { after } from 'next/server';
+import { dbReady } from '@/db';
 import { rescoreDay } from '@/lib/nutrition-scoring';
+import { logMeal, getDaySummary } from '@/lib/meal-logging';
+
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   await dbReady;
@@ -10,15 +12,7 @@ export async function GET(request: NextRequest) {
   const date = searchParams.get('date');
   if (!date) return NextResponse.json({ error: 'date required' }, { status: 400 });
 
-  const meals = await db.select().from(mealEntries).where(eq(mealEntries.date, date));
-  const nutrition = await db.select().from(dailyNutrition).where(eq(dailyNutrition.date, date)).get();
-
-  return NextResponse.json({
-    meals,
-    score: nutrition?.nutrition_score ?? null,
-    summary: nutrition?.ai_summary ?? null,
-    scored_at: nutrition?.scored_at ?? null,
-  });
+  return NextResponse.json(await getDaySummary(date));
 }
 
 export async function POST(request: NextRequest) {
@@ -30,36 +24,41 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { description, date } = body as { description?: string; date?: string };
+  const { date, description, photo, manual } = body as {
+    date?: string;
+    description?: string;
+    photo?: { data: string; media_type: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' };
+    manual?: { description: string; calories: number; protein_g: number; carbs_g?: number; fat_g?: number };
+  };
 
-  if (!description?.trim() || !date) {
-    return NextResponse.json({ error: 'description and date required' }, { status: 400 });
+  if (!date) return NextResponse.json({ error: 'date required' }, { status: 400 });
+  const hasInput = Boolean(description?.trim() || photo?.data || (manual && manual.calories >= 0));
+  if (!hasInput) {
+    return NextResponse.json({ error: 'description, photo or manual macros required' }, { status: 400 });
   }
 
-  const now = new Date().toISOString();
+  try {
+    await logMeal({
+      date,
+      text: description,
+      image: photo,
+      manual,
+      source: 'app',
+    });
+  } catch (e) {
+    console.error('meal estimate failed:', e);
+    return NextResponse.json({ error: 'Failed to analyse meal' }, { status: 502 });
+  }
 
-  const existing = await db.select().from(mealEntries).where(eq(mealEntries.date, date));
-  const nextIndex = existing.length;
-
-  await db.insert(mealEntries).values({
-    date,
-    description: description.trim(),
-    order_index: nextIndex,
-    logged_at: now,
+  // Grade/score/summary for the whole day is slower — run it after the response
+  // so the meal (with macros) appears immediately.
+  after(async () => {
+    try {
+      await rescoreDay(date);
+    } catch (e) {
+      console.error('rescore failed:', e);
+    }
   });
 
-  await rescoreDay(date);
-
-  const meals = await db.select().from(mealEntries).where(eq(mealEntries.date, date));
-  const nutrition = await db.select().from(dailyNutrition).where(eq(dailyNutrition.date, date)).get();
-
-  return NextResponse.json(
-    {
-      meals,
-      score: nutrition?.nutrition_score ?? null,
-      summary: nutrition?.ai_summary ?? null,
-      scored_at: nutrition?.scored_at ?? null,
-    },
-    { status: 201 },
-  );
+  return NextResponse.json(await getDaySummary(date), { status: 201 });
 }

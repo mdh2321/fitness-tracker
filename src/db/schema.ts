@@ -21,6 +21,8 @@ export const userSettings = sqliteTable('user_settings', {
   unlocked_colors: text('unlocked_colors').notNull().default('["#00d26a"]'),
   pinned_badges: text('pinned_badges').notNull().default('[]'),
   fitness_goal: text('fitness_goal').notNull().default('maintain'),
+  daily_calorie_target: integer('daily_calorie_target').notNull().default(2400),
+  daily_protein_target: integer('daily_protein_target').notNull().default(140),
 });
 
 export const workouts = sqliteTable('workouts', {
@@ -82,6 +84,14 @@ export const mealEntries = sqliteTable('meal_entries', {
   logged_at: text('logged_at').notNull(),
   emoji: text('emoji'),
   grade: text('grade'),
+  calories: integer('calories'),
+  protein_g: real('protein_g'),
+  carbs_g: real('carbs_g'),
+  fat_g: real('fat_g'),
+  items: text('items'), // JSON: [{name, quantity, calories, protein_g, carbs_g, fat_g}]
+  assumptions: text('assumptions'), // what the AI assumed about portions/prep
+  source: text('source').notNull().default('app'), // app, telegram
+  input_method: text('input_method').notNull().default('text'), // text, photo, manual
 });
 
 export const dailyNutrition = sqliteTable('daily_nutrition', {

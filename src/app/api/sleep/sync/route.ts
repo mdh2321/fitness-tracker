@@ -3,7 +3,7 @@ import { db as database, dbReady, type DB } from '@/db';
 import { syncAuth, logHealthSync } from '@/lib/sync-server';
 import { validateHealthSync } from '@/lib/health-sync';
 import { sleepSessions, dailySleep } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 interface SleepEntry {
   totalSleep?: number;   // hours, matching existing ARC exports
@@ -64,7 +64,9 @@ function parseSleepEntry(entry: SleepEntry) {
   };
 }
 
-async function upsertSleepSession(db: Pick<DB, 'select' | 'insert' | 'update'>, parsed: NonNullable<ReturnType<typeof parseSleepEntry>>) {
+async function upsertSleepSession(db: Pick<DB, 'select' | 'insert' | 'update' | 'all'>, parsed: NonNullable<ReturnType<typeof parseSleepEntry>>) {
+  const owned = await db.all(sql`SELECT date FROM healthkit_daily_ownership WHERE date=${parsed.date} AND metric='sleep'`);
+  if (owned.length) return parsed.date;
   const sourceId = `auto_export_${parsed.date}`;
 
   const existing = await db.select().from(sleepSessions).where(eq(sleepSessions.source_id, sourceId)).get();

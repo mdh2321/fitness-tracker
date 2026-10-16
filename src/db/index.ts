@@ -20,6 +20,7 @@ const client = createClient({ url, authToken });
 
 // Ensure tables created outside Drizzle exist — awaited via initPromise
 const initPromise = (async () => {
+  if (url.startsWith('file:')) await client.execute('PRAGMA busy_timeout = 5000');
   // Sync log for debugging Health Auto Export payloads
   await client.execute(`CREATE TABLE IF NOT EXISTS sync_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,6 +34,18 @@ const initPromise = (async () => {
   payload_snippet TEXT,
   ip TEXT
 )`);
+
+  // Native sync receipts make network retries idempotent. No raw payloads are retained.
+  await client.execute(`CREATE TABLE IF NOT EXISTS healthkit_receipts (
+    batch_id TEXT PRIMARY KEY, device_id TEXT NOT NULL, payload_hash TEXT NOT NULL,
+    response TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+  await client.execute(`CREATE TABLE IF NOT EXISTS healthkit_workout_links (
+    healthkit_id TEXT PRIMARY KEY, workout_id INTEGER NOT NULL
+  )`);
+  await client.execute(`CREATE TABLE IF NOT EXISTS healthkit_daily_ownership (
+    date TEXT NOT NULL, metric TEXT NOT NULL, PRIMARY KEY (date, metric)
+  )`);
 
   await client.execute(`CREATE TABLE IF NOT EXISTS weekly_reports (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

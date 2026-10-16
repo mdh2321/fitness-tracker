@@ -45,3 +45,8 @@ next-env.d.ts
 /data/*.db
 /data/*.db-wal
 /data/*.db-shm
+
+# Native companion build outputs and personal signing state
+/ios/.build/
+/ios/DerivedData/
+**/xcuserdata/

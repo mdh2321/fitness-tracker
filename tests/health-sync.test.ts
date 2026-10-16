@@ -132,3 +132,57 @@ test('diagnostics require a header, omit raw payloads and retain older success t
   assert.equal(details.status, 200);
   assert.equal((await details.text()).includes('payload_snippet'), false);
 });
+
+test('native receipts, migration, corrections, deletions and Auto Export handover', async () => {
+  const native = await import('../src/app/api/sync/healthkit/route');
+  const { randomUUID } = await import('node:crypto');
+  const id = randomUUID();
+  const batch = { version: 1, batchId: randomUUID(), deviceId: randomUUID(),
+    workouts: [{ id, name: 'Running', start: '2026-10-13T20:00:00Z', end: '2026-10-13T20:30:00Z', localDate: '2026-10-14',
+      durationSeconds: 1801, distanceKm: 5.12, averageHeartRate: 144, maximumHeartRate: null, activeCalories: 300 }],
+    deletedWorkoutIds: [], days: [{ date: '2026-10-14', steps: 1200, sleep: { totalMinutes: 430, inBedMinutes: null,
+      deepMinutes: 90, remMinutes: null, coreMinutes: null, awakeMinutes: null } }] };
+  // Mimic the older XML importer ID; adopt its row instead of creating a duplicate.
+  await database.rawClient.execute("UPDATE workouts SET apple_health_id='apple_health_legacy' WHERE apple_health_id='run-1'");
+  const first = await native.POST(request(batch));
+  assert.equal(first.status, 200);
+  const firstBody = await first.json();
+  assert.equal(firstBody.updated, 1);
+  const retry = await native.POST(request(batch));
+  assert.deepEqual(await retry.json(), firstBody);
+  assert.equal((await database.rawClient.execute('SELECT count(*) AS n FROM workouts')).rows[0].n, 1);
+  assert.equal((await native.POST(request({ ...batch, days: [] }))).status, 409);
+  const rows = (await database.rawClient.execute('SELECT * FROM workouts')).rows;
+  assert.equal(rows[0].duration_minutes, 1801 / 60);
+  assert.equal(rows[0].distance_km, 5.12);
+  await health.POST(request({ workouts: [{ ...workout, id: id.toUpperCase() }] }));
+  assert.equal((await database.rawClient.execute('SELECT count(*) AS n FROM workouts')).rows[0].n, 1);
+  assert.equal((await database.rawClient.execute('SELECT duration_minutes FROM workouts')).rows[0].duration_minutes, 1801 / 60);
+
+  assert.equal((await database.rawClient.execute("SELECT total_minutes FROM daily_sleep WHERE date='2026-10-14'")).rows[0].total_minutes, 430);
+  await health.POST(request({ metrics: [{ name: 'step_count', data: [{ date: '2026-10-14', qty: 9999 }] },
+    { name: 'sleep_analysis', data: [{ date: '2026-10-14', asleep: 12 }] }] }));
+  assert.equal((await database.rawClient.execute("SELECT steps FROM daily_strain WHERE date='2026-10-14'")).rows[0].steps, 1200);
+  assert.equal((await database.rawClient.execute("SELECT total_minutes FROM daily_sleep WHERE date='2026-10-14'")).rows[0].total_minutes, 430);
+  const deletion = { ...batch, batchId: randomUUID(), workouts: [], deletedWorkoutIds: [id], days: [{ date: '2026-10-14', steps: 0, stepsConfirmedDeletion: true }] };
+  assert.equal((await native.POST(request(deletion))).status, 200);
+  assert.equal((await database.rawClient.execute('SELECT count(*) AS n FROM workouts')).rows[0].n, 0);
+  assert.equal((await database.rawClient.execute("SELECT workout_count FROM daily_strain WHERE date='2026-10-14'")).rows[0].workout_count, 0);
+  assert.equal((await native.POST(request({ ...deletion, batchId: randomUUID(), days: [{ date: '2026-10-14', steps: 0 }] }))).status, 422);
+  assert.equal((await native.GET(request(undefined, null))).status, 401);
+});
+
+test('native transaction rollback keeps data, ownership and receipt atomic', async () => {
+  const native = await import('../src/app/api/sync/healthkit/route');
+  const { randomUUID } = await import('node:crypto');
+  const batch = { version: 1, batchId: randomUUID(), deviceId: randomUUID(), workouts: [], deletedWorkoutIds: [],
+    days: [{ date: '2026-10-20', steps: 1234 }] };
+  await database.rawClient.execute(`CREATE TRIGGER reject_native_receipt BEFORE INSERT ON healthkit_receipts
+    BEGIN SELECT RAISE(ABORT, 'test failure'); END`);
+  assert.equal((await native.POST(request(batch))).status, 500);
+  assert.equal((await database.rawClient.execute("SELECT count(*) AS n FROM daily_strain WHERE date='2026-10-20'")).rows[0].n, 0);
+  assert.equal((await database.rawClient.execute("SELECT count(*) AS n FROM healthkit_daily_ownership WHERE date='2026-10-20'")).rows[0].n, 0);
+  await database.rawClient.execute('DROP TRIGGER reject_native_receipt');
+  assert.equal((await native.POST(request(batch))).status, 200);
+  assert.equal((await database.rawClient.execute("SELECT steps FROM daily_strain WHERE date='2026-10-20'")).rows[0].steps, 1234);
+});

@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rawClient, dbReady } from '@/db';
+import { syncAuth } from '@/lib/sync-server';
 
 export async function GET(request: NextRequest) {
-  const apiKey = request.headers.get('x-api-key') ?? request.nextUrl.searchParams.get('key');
-  if (!apiKey || apiKey !== process.env.SYNC_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = syncAuth(request);
+  if (unauthorized) return unauthorized;
 
   await dbReady;
 
-  const limit = Math.min(Number(request.nextUrl.searchParams.get('limit') ?? 20), 50);
+  const requested = Number(request.nextUrl.searchParams.get('limit') ?? 20);
+  const limit = Number.isFinite(requested) ? Math.max(1, Math.min(Math.floor(requested), 50)) : 20;
 
   const logs = await rawClient.execute({
     sql: `SELECT * FROM sync_log ORDER BY timestamp DESC LIMIT ?`,
@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
       steps_imported: row.steps_imported,
       sleep_imported: row.sleep_imported,
       error: row.error,
-      payload_snippet: row.payload_snippet,
     })),
-  });
+  }, { headers: { 'Cache-Control': 'no-store' } });
 }

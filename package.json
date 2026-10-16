@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "npx tsx src/db/migrate.ts",
-    "db:studio": "npx drizzle-kit studio"
+    "db:studio": "npx drizzle-kit studio",
+    "test:sync": "node scripts/test-sync.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -53,6 +54,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "esbuild": "0.25.12"
   }
 }

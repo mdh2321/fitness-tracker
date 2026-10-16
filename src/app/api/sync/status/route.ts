@@ -1,7 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { rawClient, dbReady } from '@/db';
+import { syncAuth } from '@/lib/sync-server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const unauthorized = syncAuth(request);
+  if (unauthorized) return unauthorized;
   await dbReady;
 
   // Get last sync log entries by data type
@@ -9,19 +12,15 @@ export async function GET() {
     `SELECT * FROM sync_log ORDER BY timestamp DESC LIMIT 50`
   );
 
-  // Find last successful sync for each type
-  let lastWorkoutSync: string | null = null;
-  let lastStepSync: string | null = null;
-  let lastSleepSync: string | null = null;
-  let lastAnySync: string | null = null;
-
-  for (const row of logs.rows) {
-    const ts = row.timestamp as string;
-    if (!lastAnySync) lastAnySync = ts;
-    if (!lastWorkoutSync && (row.workouts_imported as number) > 0) lastWorkoutSync = ts;
-    if (!lastStepSync && (row.steps_imported as number) > 0) lastStepSync = ts;
-    if (!lastSleepSync && (row.sleep_imported as number) > 0) lastSleepSync = ts;
-  }
+  // Aggregate all history: frequent no-op requests must not hide an older success.
+  const summary = await rawClient.execute(`SELECT
+    MAX(timestamp) AS attempted,
+    MAX(CASE WHEN error IS NULL THEN timestamp END) AS succeeded,
+    MAX(CASE WHEN error IS NULL AND workouts_imported > 0 THEN timestamp END) AS workouts,
+    MAX(CASE WHEN error IS NULL AND steps_imported > 0 THEN timestamp END) AS steps,
+    MAX(CASE WHEN error IS NULL AND sleep_imported > 0 THEN timestamp END) AS sleep
+    FROM sync_log`);
+  const last = summary.rows[0];
 
   // Also check DB directly for last data timestamps
   const lastWorkout = await rawClient.execute(
@@ -36,11 +35,12 @@ export async function GET() {
 
   return NextResponse.json({
     lastSync: {
-      any: lastAnySync,
-      workouts: lastWorkoutSync,
-      steps: lastStepSync,
-      sleep: lastSleepSync,
+      any: last?.succeeded ?? null,
+      workouts: last?.workouts ?? null,
+      steps: last?.steps ?? null,
+      sleep: last?.sleep ?? null,
     },
+    lastAttempt: last?.attempted ?? null,
     lastData: {
       workout: lastWorkout.rows[0]?.created_at ?? null,
       sleep: lastSleep.rows[0]?.created_at ?? null,
@@ -55,5 +55,5 @@ export async function GET() {
       sleep: row.sleep_imported,
       error: row.error,
     })),
-  });
+  }, { headers: { 'Cache-Control': 'no-store' } });
 }

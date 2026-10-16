@@ -1,29 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, rawClient, dbReady } from '@/db';
+import { db as database, dbReady, type DB } from '@/db';
+import { syncAuth, logHealthSync } from '@/lib/sync-server';
+import { validateHealthSync } from '@/lib/health-sync';
 import { sleepSessions, dailySleep } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
-async function logSync(endpoint: string, metricNames: string[], sleepImported: number, error: string | null, payloadSnippet: string) {
-  try {
-    await dbReady;
-    await rawClient.execute({
-      sql: `INSERT INTO sync_log (endpoint, metric_names, sleep_imported, error, payload_snippet) VALUES (?, ?, ?, ?, ?)`,
-      args: [endpoint, metricNames.join(','), sleepImported, error, payloadSnippet.slice(0, 4000)],
-    });
-  } catch (e) {
-    console.error('[Sync Log] Failed to write log:', e);
-  }
-}
-
 interface SleepEntry {
-  totalSleep?: number;   // seconds (flat format)
+  totalSleep?: number;   // hours, matching existing ARC exports
   asleep?: number;       // hours (Auto Export format)
-  core?: number;         // seconds
-  deep?: number;         // seconds or hours
-  rem?: number;          // seconds or hours
+  core?: number;         // hours
+  deep?: number;         // hours
+  rem?: number;          // hours
   sleepStart?: string;
   sleepEnd?: string;
-  inBed?: number;        // seconds or hours
+  inBed?: number;        // hours
   inBedStart?: string;
   inBedEnd?: string;
   awake?: number;
@@ -32,7 +22,6 @@ interface SleepEntry {
 }
 
 function parseSleepEntry(entry: SleepEntry) {
-  // Auto Export sends values in hours; flat format sends seconds
   // Use totalSleep if asleep is 0 or missing; all values in hours
   const sleepHours = entry.asleep || entry.totalSleep;
   const totalMinutes = sleepHours ? Math.round(sleepHours * 60) : 0;
@@ -75,7 +64,7 @@ function parseSleepEntry(entry: SleepEntry) {
   };
 }
 
-async function upsertSleepSession(parsed: NonNullable<ReturnType<typeof parseSleepEntry>>) {
+async function upsertSleepSession(db: Pick<DB, 'select' | 'insert' | 'update'>, parsed: NonNullable<ReturnType<typeof parseSleepEntry>>) {
   const sourceId = `auto_export_${parsed.date}`;
 
   const existing = await db.select().from(sleepSessions).where(eq(sleepSessions.source_id, sourceId)).get();
@@ -83,7 +72,6 @@ async function upsertSleepSession(parsed: NonNullable<ReturnType<typeof parseSle
   if (existing) {
     // Don't overwrite with lower sleep duration — partial/recalculated data
     if (existing.duration_minutes > parsed.duration_minutes) {
-      console.log(`[Sleep Sync] Skipping update for ${parsed.date}: existing ${existing.duration_minutes}min > incoming ${parsed.duration_minutes}min`);
       return parsed.date;
     }
     await db.update(sleepSessions).set({
@@ -138,63 +126,51 @@ async function upsertSleepSession(parsed: NonNullable<ReturnType<typeof parseSle
 }
 
 export async function POST(request: NextRequest) {
-  const apiKey = request.headers.get('x-api-key');
-  if (!apiKey || apiKey !== process.env.SYNC_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const endpoint = '/api/sleep/sync';
+  const empty = { workouts: 0, steps: 0, sleep: 0 };
+  const unauthorized = syncAuth(request);
+  if (unauthorized) {
+    await logHealthSync(endpoint, [], empty, unauthorized.status === 401 ? 'unauthorized' : 'sync_not_configured');
+    return unauthorized;
   }
-
+  let body;
+  try { body = await request.json(); }
+  catch {
+    await logHealthSync(endpoint, [], empty, 'invalid_json');
+    return NextResponse.json({ error: 'Invalid JSON body', code: 'invalid_json' }, { status: 400 });
+  }
+  const nested = body?.data?.metrics;
+  // Preserve this endpoint's existing nested and single-entry formats.
+  const metrics = Array.isArray(nested)
+    ? nested.filter(m => typeof m?.name === 'string' && m.name.toLowerCase().includes('sleep'))
+      .map(m => ({ ...m, name: 'sleep_analysis' }))
+    : [{ name: 'sleep_analysis', data: [body] }];
+  const validated = validateHealthSync({ metrics });
+  if (!validated.success) {
+    await logHealthSync(endpoint, ['sleep_analysis'], empty, 'invalid_payload');
+    return NextResponse.json({ error: 'Invalid sleep data. No records were imported.', code: 'invalid_payload' }, { status: 422 });
+  }
+  const parsed = validated.data.metrics.flatMap(m => m.data as SleepEntry[])
+    .map(parseSleepEntry).filter((p): p is NonNullable<typeof p> => p !== null && p.duration_minutes > 0);
+  if (!parsed.length) {
+    await logHealthSync(endpoint, ['sleep_analysis'], empty, 'no_sleep_entries_found');
+    return NextResponse.json({ error: 'No sleep entries found', code: 'no_sleep_entries_found' }, { status: 422 });
+  }
   try {
-    const body = await request.json();
-    const rawSnippet = JSON.stringify(body).slice(0, 4000);
-    console.log('[Sleep Sync] Incoming payload keys:', Object.keys(body ?? {}));
-
-    // Normalize metric names for resilient matching
-    const normalizeMetricName = (name: string): string => {
-      const n = name.toLowerCase().replace(/[\s_-]+/g, '');
-      if (n.includes('sleep')) return 'sleep_analysis';
-      return name;
-    };
-
-    const results: string[] = [];
-    const metricNames: string[] = [];
-
-    // Handle Health Auto Export format: { data: { metrics: [{ name, data: [...] }] } }
-    if (body?.data?.metrics) {
-      for (const metric of body.data.metrics) {
-        if (metric?.name) metricNames.push(metric.name);
-        if (normalizeMetricName(metric.name ?? '') === 'sleep_analysis' && Array.isArray(metric.data)) {
-          for (const entry of metric.data) {
-            const parsed = parseSleepEntry(entry);
-            if (parsed && parsed.duration_minutes > 0) {
-              const date = await upsertSleepSession(parsed);
-              results.push(date);
-            }
-          }
-        }
-      }
-
-      if (results.length === 0) {
-        console.log('[Sleep Sync] No sleep entries found. Metric names received:', metricNames);
-        await logSync('/api/sleep/sync', metricNames, 0, 'no_sleep_entries_found', rawSnippet);
-        return NextResponse.json({ success: true, message: 'No sleep data in payload', dates: [], receivedMetrics: metricNames });
-      }
-
-      await logSync('/api/sleep/sync', metricNames, results.length, null, rawSnippet);
-      return NextResponse.json({ success: true, dates: results });
-    }
-
-    // Handle flat format (single entry)
-    const parsed = parseSleepEntry(body);
-    if (!parsed || parsed.duration_minutes <= 0) {
-      await logSync('/api/sleep/sync', ['flat_format'], 0, 'could_not_parse', rawSnippet);
-      return NextResponse.json({ error: 'Could not parse sleep data' }, { status: 400 });
-    }
-
-    const date = await upsertSleepSession(parsed);
-    await logSync('/api/sleep/sync', ['flat_format'], 1, null, rawSnippet);
-    return NextResponse.json({ success: true, date, duration_minutes: parsed.duration_minutes });
-  } catch (e) {
-    console.error('[Sleep Sync] Error:', e);
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    await dbReady;
+    const dates = await database.transaction(async db => {
+      const dates: string[] = [];
+      for (const entry of parsed) dates.push(await upsertSleepSession(db, entry));
+      return dates;
+    });
+    const logged = await logHealthSync(endpoint, ['sleep_analysis'], { ...empty, sleep: dates.length }, null);
+    return NextResponse.json({
+      success: true, dates,
+      ...(!Array.isArray(nested) ? { date: dates[0], duration_minutes: parsed[0].duration_minutes } : {}),
+      warnings: logged ? [] : ['sync_log_unavailable'],
+    });
+  } catch {
+    await logHealthSync(endpoint, ['sleep_analysis'], empty, 'import_failed');
+    return NextResponse.json({ error: 'Import failed. Retry this batch.', code: 'import_failed' }, { status: 500 });
   }
 }

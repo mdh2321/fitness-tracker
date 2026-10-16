@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     `SELECT created_at FROM workouts WHERE source = 'apple_health' ORDER BY created_at DESC LIMIT 1`
   );
   const lastSleep = await rawClient.execute(
-    `SELECT created_at FROM sleep_sessions WHERE source = 'auto_export' ORDER BY created_at DESC LIMIT 1`
+    `SELECT created_at FROM sleep_sessions WHERE source IN ('auto_export', 'healthkit') ORDER BY created_at DESC LIMIT 1`
   );
   const lastSteps = await rawClient.execute(
     `SELECT date FROM daily_strain WHERE steps > 0 ORDER BY date DESC LIMIT 1`

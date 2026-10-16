@@ -37,6 +37,7 @@ struct UploadBatch: Codable {
 }
 struct SyncCheckpoint: Codable {
     var deviceId = UUID().uuidString.lowercased()
+    var serverURL: String?
     var historyStart = Calendar.current.date(byAdding: .day, value: -90, to: Date())!
     var anchors: [String: Data] = [:]
     // Keep dates for tombstones, because deleted HealthKit objects contain only UUIDs.

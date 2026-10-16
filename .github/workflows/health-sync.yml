@@ -25,4 +25,17 @@ jobs:
       - name: Test aggregation and date handling
         run: swift test --package-path ios
       - name: Build iPhone companion without signing
-        run: xcodebuild -project ios/ARCHealth.xcodeproj -scheme ARCHealth -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+        run: xcodebuild -project ios/ARCHealth.xcodeproj -scheme ARCHealth -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/arc-ios CODE_SIGNING_ALLOWED=NO build
+      - name: Capture the connection screen
+        run: |
+          arc_sim_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(x["udid"] for v in d["devices"].values() for x in v if "iPhone" in x["name"]))')
+          xcrun simctl boot "$arc_sim_id"
+          xcrun simctl bootstatus "$arc_sim_id" -b
+          xcrun simctl install "$arc_sim_id" /tmp/arc-ios/Build/Products/Debug-iphonesimulator/ARCHealth.app
+          xcrun simctl launch "$arc_sim_id" com.mdh2321.arc.health
+          sleep 3
+          xcrun simctl io "$arc_sim_id" screenshot /tmp/arc-connection.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc-connection-preview
+          path: /tmp/arc-connection.png

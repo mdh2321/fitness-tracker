@@ -22,6 +22,13 @@ final class HealthCoreTests: XCTestCase {
         XCTAssertEqual(result?.awakeMinutes, 30)
         XCTAssertNil(SleepAggregation.summarize(intervals, wakeDate: "2026-10-14", calendar: calendar))
     }
+    func testOtherSourceIsUsedWhenOuraOnlyHasThePreviousNight() {
+        let previous = date("2026-10-13T22:00:00+11:00")
+        let current = date("2026-10-14T22:00:00+11:00")
+        let intervals = [SleepInterval(start: previous, end: previous.addingTimeInterval(28800), stage: 1, source: "Oura"),
+                         SleepInterval(start: current, end: current.addingTimeInterval(25200), stage: 1, source: "Apple Watch")]
+        XCTAssertEqual(SleepAggregation.summarize(intervals, wakeDate: "2026-10-15", calendar: calendar)?.totalMinutes, 420)
+    }
     func testMissingDataIsNotZeroSleep() {
         XCTAssertNil(SleepAggregation.summarize([], wakeDate: "2026-10-15", calendar: calendar))
         let start = date("2026-10-14T22:00:00+11:00")

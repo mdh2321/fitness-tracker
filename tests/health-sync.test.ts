@@ -155,6 +155,10 @@ test('native receipts, migration, corrections, deletions and Auto Export handove
   const rows = (await database.rawClient.execute('SELECT * FROM workouts')).rows;
   assert.equal(rows[0].duration_minutes, 1801 / 60);
   assert.equal(rows[0].distance_km, 5.12);
+  await health.POST(request({ workouts: [{ ...workout, id: id.toUpperCase() }] }));
+  assert.equal((await database.rawClient.execute('SELECT count(*) AS n FROM workouts')).rows[0].n, 1);
+  assert.equal((await database.rawClient.execute('SELECT duration_minutes FROM workouts')).rows[0].duration_minutes, 1801 / 60);
+
   assert.equal((await database.rawClient.execute("SELECT total_minutes FROM daily_sleep WHERE date='2026-10-14'")).rows[0].total_minutes, 430);
   await health.POST(request({ metrics: [{ name: 'step_count', data: [{ date: '2026-10-14', qty: 9999 }] },
     { name: 'sleep_analysis', data: [{ date: '2026-10-14', asleep: 12 }] }] }));

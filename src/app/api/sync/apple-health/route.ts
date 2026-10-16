@@ -68,6 +68,12 @@ export async function POST(request: NextRequest) {
         const rawStartStr = (w.start ?? w.startDate ?? '').trim();
         const startDate = parseFlexibleDate(rawStartStr);
         if (isNaN(startDate.getTime())) { skippedWorkouts++; continue; }
+        const native = await db.all(sql`SELECT l.workout_id FROM healthkit_workout_links l
+          JOIN workouts w ON w.id=l.workout_id
+          WHERE lower(l.healthkit_id)=lower(${String(w.id ?? '')})
+            OR (w.started_at=${startDate.toISOString()} AND w.name=${mapping.name})`);
+        if (native.length) { skippedWorkouts++; continue; }
+
 
         // Extract the user's local date from the Apple Health string (which includes a timezone offset,
         // e.g. "2026-02-23 09:29:00 +1100"). Store it as local_date for date-based grouping.

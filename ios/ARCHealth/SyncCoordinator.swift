@@ -104,6 +104,10 @@ final class SyncCoordinator: ObservableObject {
             guard let connection = try SecureStorage.connection() else { throw SyncError.message("Reconnect ARC using your sync key.") }
             let client = ARCClient(connection), storage = try CheckpointStore()
             var checkpoint = try storage.load("checkpoint.json", as: SyncCheckpoint.self) ?? SyncCheckpoint()
+            if let server = checkpoint.serverURL, server != connection.baseURL.absoluteString {
+                throw SyncError.message("Saved history belongs to a different ARC server. Reconnect to that address.")
+            }
+            checkpoint.serverURL = connection.baseURL.absoluteString
             lastSuccess = checkpoint.lastSuccess; lastDataUpload = checkpoint.lastDataUpload
             // Persist an initial history boundary before the first query.
             try storage.save(checkpoint, as: "checkpoint.json")
@@ -132,7 +136,11 @@ final class SyncCoordinator: ObservableObject {
                 // Checkpoint first, then remove pending. A crash between these writes only replays a receipt.
                 try storage.save(checkpoint, as: "checkpoint.json")
                 try storage.remove("pending.json")
-                lastSuccess = checkpoint.lastSuccess; lastDataUpload = checkpoint.lastDataUpload; pending = false
+                if let server = checkpoint.serverURL, server != connection.baseURL.absoluteString {
+                throw SyncError.message("Saved history belongs to a different ARC server. Reconnect to that address.")
+            }
+            checkpoint.serverURL = connection.baseURL.absoluteString
+            lastSuccess = checkpoint.lastSuccess; lastDataUpload = checkpoint.lastDataUpload; pending = false
                 cycles += 1
                 if !hasMore && !requestedAgain {
                     message = checkpoint.lastDataUpload == nil

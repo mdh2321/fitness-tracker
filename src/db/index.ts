@@ -20,6 +20,7 @@ const client = createClient({ url, authToken });
 
 // Ensure tables created outside Drizzle exist — awaited via initPromise
 const initPromise = (async () => {
+  if (url.startsWith('file:')) await client.execute('PRAGMA busy_timeout = 5000');
   // Sync log for debugging Health Auto Export payloads
   await client.execute(`CREATE TABLE IF NOT EXISTS sync_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

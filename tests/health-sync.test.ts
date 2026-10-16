@@ -171,3 +171,18 @@ test('native receipts, migration, corrections, deletions and Auto Export handove
   assert.equal((await native.POST(request({ ...deletion, batchId: randomUUID(), days: [{ date: '2026-10-14', steps: 0 }] }))).status, 422);
   assert.equal((await native.GET(request(undefined, null))).status, 401);
 });
+
+test('native transaction rollback keeps data, ownership and receipt atomic', async () => {
+  const native = await import('../src/app/api/sync/healthkit/route');
+  const { randomUUID } = await import('node:crypto');
+  const batch = { version: 1, batchId: randomUUID(), deviceId: randomUUID(), workouts: [], deletedWorkoutIds: [],
+    days: [{ date: '2026-10-20', steps: 1234 }] };
+  await database.rawClient.execute(`CREATE TRIGGER reject_native_receipt BEFORE INSERT ON healthkit_receipts
+    BEGIN SELECT RAISE(ABORT, 'test failure'); END`);
+  assert.equal((await native.POST(request(batch))).status, 500);
+  assert.equal((await database.rawClient.execute("SELECT count(*) AS n FROM daily_strain WHERE date='2026-10-20'")).rows[0].n, 0);
+  assert.equal((await database.rawClient.execute("SELECT count(*) AS n FROM healthkit_daily_ownership WHERE date='2026-10-20'")).rows[0].n, 0);
+  await database.rawClient.execute('DROP TRIGGER reject_native_receipt');
+  assert.equal((await native.POST(request(batch))).status, 200);
+  assert.equal((await database.rawClient.execute("SELECT steps FROM daily_strain WHERE date='2026-10-20'")).rows[0].steps, 1234);
+});

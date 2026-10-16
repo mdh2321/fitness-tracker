@@ -121,7 +121,7 @@ final class SyncCoordinator: ObservableObject {
                 if let saved = try storage.load("pending.json", as: PendingUpload.self) {
                     upload = saved; hasMore = true
                 } else {
-                    let built = try await buildBatch(checkpoint)
+                    let built = try await buildBatch(checkpoint, refreshRecent: cycles == 0)
                     upload = built.0; hasMore = built.1
                     try storage.save(upload, as: "pending.json")
                 }
@@ -159,13 +159,13 @@ final class SyncCoordinator: ObservableObject {
             return false
         }
     }
-    private func buildBatch(_ current: SyncCheckpoint) async throws -> (PendingUpload, Bool) {
+    private func buildBatch(_ current: SyncCheckpoint, refreshRecent: Bool) async throws -> (PendingUpload, Bool) {
         var next = current
         let workouts = try await reader.changes(type: reader.workoutType, anchor: current.anchors["workouts"], start: nil, limit: 50)
         next.anchors["workouts"] = workouts.anchor
         var workoutSamples = Dictionary(uniqueKeysWithValues: workouts.samples.compactMap { $0 as? HKWorkout }.map { ($0.uuid, $0) })
         // Refresh recent workouts for heart-rate/distance values that arrive after the workout itself.
-        if workouts.samples.isEmpty && workouts.deleted.isEmpty {
+        if refreshRecent && workouts.samples.isEmpty && workouts.deleted.isEmpty {
             let start = Calendar.current.date(byAdding: .day, value: -14, to: Date())!
             for case let workout as HKWorkout in try await reader.samples(type: reader.workoutType, from: start, to: Date(), limit: 25) { workoutSamples[workout.uuid] = workout }
         }

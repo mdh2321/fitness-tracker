@@ -52,12 +52,12 @@ struct ConnectionView: View {
                                     await sync.connect(url: address, key: key)
                                     if sync.connected { key = ""; showConnection = false; _ = await sync.sync() }
                                 }
-                            } label: { Text("Connect Apple Health").frame(maxWidth: .infinity).padding(.vertical, 10) }
+                            } label: { Text("Connect Apple Health").foregroundStyle(.white).frame(maxWidth: .infinity).padding(.vertical, 10) }
                                 .buttonStyle(.borderedProminent).tint(ink).disabled(sync.busy)
                         }
                     } else {
                         Button { Task { _ = await sync.sync() } } label: {
-                            HStack { Text(sync.busy ? "Syncing…" : "Sync now"); Spacer(); Image(systemName: "arrow.up.right") }.padding(.vertical, 12)
+                            HStack { Text(sync.busy ? "Syncing…" : "Sync now"); Spacer(); Image(systemName: "arrow.up.right") }.foregroundStyle(.white).padding(.vertical, 12)
                         }.buttonStyle(.borderedProminent).tint(ink).disabled(sync.busy)
                         Link(destination: URL(string: address)!) { HStack { Text("Open your dashboard"); Spacer(); Image(systemName: "arrow.up.right") } }.foregroundStyle(ink)
                     }
